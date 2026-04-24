@@ -1,0 +1,10 @@
+.quotations-module {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}

@@ -1,0 +1,36 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.main-container {
+
+  flex: 1;
+  margin-left: 240px;
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition-all);
+  min-width: 0; /* Prevents flexbox blowout */
+  width: 100%;
+}
+
+.content {
+  padding: 24px;
+  flex: 1;
+  min-width: 0; /* Prevents flexbox blowout */
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    margin-left: 0;
+  }
+  
+  .content {
+    padding: 16px;
+  }
+}
+

@@ -1,0 +1,78 @@
+.settings-module {
+  height: 100%;
+}
+
+.settings-container {
+  display: flex;
+  min-height: 600px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.settings-sidebar {
+  width: 240px;
+  background-color: var(--page-bg);
+  border-right: 1px solid var(--border-color);
+  padding: 20px 0;
+}
+
+.settings-nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  color: var(--secondary-text);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-all);
+  text-align: left;
+}
+
+.settings-nav-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.settings-nav-item.active {
+  background-color: white;
+  color: var(--primary-brand);
+  font-weight: 600;
+  position: relative;
+}
+
+.settings-nav-item.active::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--primary-brand);
+}
+
+.settings-content {
+  flex: 1;
+  padding: 32px;
+}
+
+.settings-form {
+  max-width: 600px;
+  margin-top: 24px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.section-header {
+  margin-bottom: 24px;
+}
+
+.section-header h3 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}

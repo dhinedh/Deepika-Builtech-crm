@@ -1,0 +1,136 @@
+.whatsapp-auto-follow {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.whatsapp-btn {
+  color: #25D366 !important;
+  background-color: rgba(37, 211, 102, 0.1) !important;
+  border: 1px solid rgba(37, 211, 102, 0.2) !important;
+}
+
+.whatsapp-btn:hover {
+  background-color: #25D366 !important;
+  color: white !important;
+  transform: translateY(-1px);
+}
+
+.follow-up-confirm {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: -10px;
+  z-index: 9999;
+  padding: 16px;
+  width: 240px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.follow-up-confirm::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 20px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: white transparent transparent transparent;
+}
+
+.follow-up-confirm p {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-brand);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.confirm-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-follow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-follow:hover {
+  border-color: var(--primary-brand);
+  background-color: var(--page-bg);
+  transform: translateY(-2px);
+}
+
+.btn-follow .days {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-brand);
+}
+
+.btn-follow .label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--secondary-text);
+}
+
+.close-confirm {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: var(--secondary-text);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.close-confirm:hover {
+  background: var(--page-bg);
+  color: var(--primary-brand);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 768px) {
+  .follow-up-confirm {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    bottom: auto;
+    right: auto;
+    box-shadow: 0 0 0 100vw rgba(0, 0, 0, 0.5); /* Acts as a backdrop overlay */
+    z-index: 10000;
+  }
+  
+  .follow-up-confirm::after {
+    display: none; /* Hide the little triangle arrow on mobile */
+  }
+  
+  /* Reset slide-in animation for fixed centering */
+  @keyframes slideInMobile {
+    from { opacity: 0; transform: translate(-50%, -40%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+  }
+  
+  .follow-up-confirm {
+    animation: slideInMobile 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+

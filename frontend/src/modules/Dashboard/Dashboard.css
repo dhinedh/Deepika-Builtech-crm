@@ -1,0 +1,175 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.leads-icon { background-color: var(--secondary-brand); }
+.value-icon { background-color: var(--success); }
+.projects-icon { background-color: var(--info); }
+.follow-icon { background-color: var(--accent-cta); }
+
+.stat-card.overdue {
+  background-color: rgba(226, 75, 74, 0.05);
+  border-color: rgba(226, 75, 74, 0.2);
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.trend {
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.trend.positive { color: var(--success); }
+.trend.negative { color: var(--danger); }
+.trend.neutral { color: var(--muted-text); }
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 20px;
+}
+
+.chart-card {
+  padding: 20px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.chart-container {
+  min-height: 300px;
+}
+
+.data-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.follow-up-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.follow-up-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: var(--page-bg);
+  border-radius: 8px;
+  border-left: 4px solid var(--info);
+}
+
+.follow-up-item.overdue {
+  border-left-color: var(--danger);
+  background-color: rgba(226, 75, 74, 0.05);
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.project-progress-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress-bar-bg {
+  height: 8px;
+  background-color: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--success);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.project-footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.font-600 { font-weight: 600; }
+.success-text { color: var(--success); }
+.warning-text { color: var(--warning); }
+.danger-text { color: var(--danger); }
+
+@media (max-width: 1200px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .data-grid { grid-template-columns: 1fr; }
+  .projects-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .projects-grid { grid-template-columns: 1fr; }
+}

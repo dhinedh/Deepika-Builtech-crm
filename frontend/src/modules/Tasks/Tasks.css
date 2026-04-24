@@ -1,0 +1,105 @@
+.tasks-module {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.task-filters {
+  background: white;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-tab {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--secondary-text);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.filter-tab:hover {
+  background-color: var(--page-bg);
+}
+
+.filter-tab.active {
+  background-color: var(--primary-brand);
+  color: white;
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 16px;
+  transition: var(--transition-all);
+}
+
+.task-item:hover {
+  border-color: var(--secondary-brand);
+}
+
+.check-circle {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.task-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.meta-item.overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.meta-item.due-today {
+  color: var(--warning);
+  font-weight: 600;
+}

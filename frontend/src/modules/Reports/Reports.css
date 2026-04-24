@@ -1,0 +1,21 @@
+.reports-module {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.report-card {
+  padding: 24px;
+}
+
+@media (max-width: 1024px) {
+  .reports-grid {
+    grid-template-columns: 1fr;
+  }
+}

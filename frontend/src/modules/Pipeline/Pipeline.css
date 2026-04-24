@@ -1,0 +1,154 @@
+.pipeline-module {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: calc(100vh - 120px);
+}
+
+.pipeline-header {
+  background: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.pipeline-stats {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 40px;
+  background-color: var(--border-color);
+}
+
+.kanban-container {
+  flex: 1;
+  overflow-x: auto;
+  padding-bottom: 20px;
+}
+
+.kanban-board {
+  display: flex;
+  gap: 16px;
+  height: 100%;
+  min-width: max-content;
+}
+
+.kanban-column {
+  width: 280px;
+  background-color: #EDF2F7;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+
+.column-header {
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.count-badge {
+  background-color: white;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-brand);
+}
+
+.column-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-text);
+}
+
+.column-content {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kanban-card {
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: var(--transition-all);
+}
+
+.kanban-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--secondary-brand);
+}
+
+.kanban-card.overlay {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transform: rotate(2deg);
+  cursor: grabbing;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.deal-value {
+  font-weight: 700;
+  color: var(--primary-brand);
+}
+
+.deal-name {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--body-text);
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--page-bg);
+}
+
+.footer-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted-text);
+}
+
+.next-follow-up {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.next-follow-up.overdue {
+  background-color: rgba(226, 75, 74, 0.1);
+  color: var(--danger);
+}
