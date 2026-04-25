@@ -1,5 +1,6 @@
 import express from 'express';
 import { supabase } from '../config/supabase.js';
+import { sendFollowUpLead } from '../whatsappService.js';
 
 const router = express.Router();
 
@@ -59,18 +60,16 @@ router.post('/meta', async (req, res) => {
 
           if (isExisting) {
             console.log(`[WhatsApp Filter] Message ignored - ${phone} is already an active Lead/Contact.`);
-            // (Optional: You could save this message to a 'chat_history' table here)
           } else {
             // 2. FILTER: Check for "Lead Intent" Keywords
-            // If they just say "ok" or send spam, we ignore it.
             const leadKeywords = ['hi', 'hello', 'interested', 'price', 'cost', 'quote', 'details', 'buy', 'service', 'help', 'inquiry'];
             
-            // If it contains a keyword OR if it's a media attachment (images/voice notes often mean serious inquiry)
             const isLeadIntent = leadKeywords.some(keyword => messageText.includes(keyword)) || messageText === '';
 
             if (isLeadIntent) {
+              const customerName = contact?.profile?.name || 'Customer';
               const newLead = {
-                contactName: contact?.profile?.name || phone,
+                contactName: customerName,
                 phone: phone,
                 source: 'WhatsApp',
                 status: 'New',
@@ -85,7 +84,10 @@ router.post('/meta', async (req, res) => {
               if (error) {
                 console.error('[WhatsApp Webhook DB Error]:', error.message);
               } else {
-                console.log(`[WhatsApp Lead Captured] Added ${newLead.contactName} to CRM.`);
+                console.log(`[WhatsApp Lead Captured] Added ${customerName} to CRM.`);
+                
+                // 4. AUTOMATED FOLLOW-UP (As requested by user)
+                await sendFollowUpLead(phone, customerName);
               }
             } else {
               console.log(`[WhatsApp Filter] Ignored casual/spam message from ${phone}: "${messageText}"`);
@@ -99,22 +101,16 @@ router.post('/meta', async (req, res) => {
         const changes = body.entry?.[0]?.changes?.[0];
         if (changes && changes.field === 'leadgen') {
           const leadId = changes.value.leadgen_id;
-          
-          // Note: You must make a Graph API call using this leadId to get the actual user data
-          // Example: fetch(`https://graph.facebook.com/v17.0/${leadId}?access_token=${PAGE_ACCESS_TOKEN}`)
-          
           console.log(`[FB/IG Lead Gen Triggered] Lead ID to process: ${leadId}`);
           
-          // Example Formulated Lead after fetching data:
-          // const newLead = { source: 'Facebook Ads', contactName: '...', email: '...' }
-          // await supabase.from('leads').insert([newLead]);
+          // Future implementation: Fetch lead data from Graph API using leadId
+          // then call sendFollowUpLead(leadPhone, leadName);
         }
       }
 
       res.status(200).send('EVENT_RECEIVED');
     } catch (err) {
       console.error('[Meta Webhook Process Error]:', err);
-      // Meta requires 200 OK so it doesn't retry indefinitely
       res.status(200).send('EVENT_RECEIVED_WITH_ERROR');
     }
   } else {
@@ -122,25 +118,11 @@ router.post('/meta', async (req, res) => {
   }
 });
 
-/**
- * ==========================================
- * LINKEDIN WEBHOOKS
- * ==========================================
- */
-
-// Payload Receiver for LinkedIn Lead Gen Forms
+// ... LinkedIn logic ...
 router.post('/linkedin', async (req, res) => {
   try {
     const payload = req.body;
-    
-    // Process LinkedIn Lead Data
-    // LinkedIn sends data differently, usually requires authenticating and parsing the submitted form elements
-    
     console.log('[LinkedIn Webhook Received]', payload);
-
-    // Save to Database
-    // await supabase.from('leads').insert([{ source: 'LinkedIn', ... }]);
-
     res.status(200).send('EVENT_RECEIVED');
   } catch (err) {
     console.error('[LinkedIn Webhook Error]:', err);
