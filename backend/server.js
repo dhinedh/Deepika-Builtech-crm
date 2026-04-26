@@ -28,6 +28,9 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+// Required for Render and other proxies to handle rate-limiting correctly
+app.set('trust proxy', 1);
+
 // Initialize Automated Background Tasks (Cron Jobs)
 startCronJobs();
 

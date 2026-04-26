@@ -65,7 +65,7 @@ export const startCronJobs = () => {
       const inOneHour = new Date(now.getTime() + 60 * 60 * 1000);
 
       const { data: followUps, error } = await supabase
-        .from('follow_ups')
+        .from('followups')
         .select('*, leads(*)')
         .eq('status', 'Pending')
         .gte('scheduled_date', now.toISOString())
@@ -108,7 +108,7 @@ export const startCronJobs = () => {
 
           // 3. Mark as sent in DB permanently
           const { error: updateError } = await supabase
-            .from('follow_ups')
+            .from('followups')
             .update({ reminder_sent: true })
             .eq('id', fUp.id);
 
