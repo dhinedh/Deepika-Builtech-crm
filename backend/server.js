@@ -21,6 +21,7 @@ import followUpsRoutes from './routes/followUpsRoutes.js';
 import vendorsRoutes from './routes/vendorsRoutes.js';
 import siteVisitsRoutes from './routes/siteVisitsRoutes.js';
 import webhooksRoutes from './routes/webhooksRoutes.js';
+import metaWebhookHandler from './api/webhooks/meta.js';
 
 dotenv.config();
 
@@ -62,6 +63,7 @@ app.get('/api/status', (req, res) => {
 app.use('/api/auth', authRoutes);
 
 // Social Media Lead Integrations (Publicly accessible but securely verified internally via Tokens)
+app.all('/api/webhooks/meta', metaWebhookHandler);
 app.use('/api/webhooks', webhooksRoutes);
 
 // Protected Routes (Requires valid Supabase JWT)
