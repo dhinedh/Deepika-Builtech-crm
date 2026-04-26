@@ -22,7 +22,7 @@ export const sendWhatsAppMessage = async (phone, templateId, parameters) => {
     const finalPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
 
     const response = await axios.post(
-      `https://graph.facebook.com/v17.0/${PHONE_NUMBER_ID}/messages`,
+      `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: "whatsapp",
         to: finalPhone,
