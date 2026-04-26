@@ -62,7 +62,7 @@ app.get('/api/status', (req, res) => {
 });
 app.use('/api/auth', authRoutes);
 
-// Social Media Lead Integrations (Publicly accessible but securely verified internally via Tokens)
+// Social Media Lead Integrations (Verified via Meta Graph API)
 app.all('/api/webhooks/meta', metaWebhookHandler);
 app.use('/api/webhooks', webhooksRoutes);
 
