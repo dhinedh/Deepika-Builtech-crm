@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, Filter, MoreVertical, Eye, Edit2, CheckCircle, 
   MessageSquare, Phone, Mail, MapPin, Calendar 
@@ -15,8 +15,12 @@ import '../../components/UI/Modal.css';
 import type { Lead } from '../../types/index.ts';
 
 const Leads: React.FC = () => {
-  const { leads, updateLead } = useCRMStore();
+  const { leads, updateLead, fetchLeads } = useCRMStore();
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
   const [statusFilter, setStatusFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);

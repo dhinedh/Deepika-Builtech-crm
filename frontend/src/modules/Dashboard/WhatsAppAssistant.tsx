@@ -35,9 +35,8 @@ export const WhatsAppAssistant: React.FC = () => {
   };
 
   const handleSendReminder = (lead: any, date: string) => {
-    const message = `Hi ${lead.contactName}, this is a gentle reminder for our scheduled interaction tomorrow at ${format(new Date(date), 'hh:mm a')}. Looking forward to it! - Deepika Builtech`;
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/91${lead.phone.replace(/\D/g, '')}?text=${encodedMessage}`, '_blank');
+    const formattedDateTime = format(new Date(date), 'hh:mm a');
+    sendWhatsAppMessage(lead.phone, lead.contactName, 'reminder', [formattedDateTime]);
   };
 
   if (dueWeeklyLeads.length === 0 && upcomingFollowUps.length === 0) {

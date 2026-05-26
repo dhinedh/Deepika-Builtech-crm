@@ -88,3 +88,14 @@ INSERT INTO public.followups (lead_id, type, scheduled_date, status)
 SELECT id, 'Phone Call', NOW() + INTERVAL '30 minutes', 'Pending'
 FROM public.leads LIMIT 1;
 */
+
+-- 7. Create 'enquiries' table
+CREATE TABLE IF NOT EXISTS public.enquiries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    contactName TEXT,
+    phone TEXT UNIQUE,
+    lastMessage TEXT,
+    status TEXT DEFAULT 'New',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);

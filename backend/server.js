@@ -22,6 +22,8 @@ import vendorsRoutes from './routes/vendorsRoutes.js';
 import siteVisitsRoutes from './routes/siteVisitsRoutes.js';
 import webhooksRoutes from './routes/webhooksRoutes.js';
 import metaWebhookHandler from './api/webhooks/meta.js';
+import whatsappRoutes from './routes/whatsappRoutes.js';
+import enquiriesRoutes from './routes/enquiriesRoutes.js';
 
 dotenv.config();
 
@@ -68,8 +70,10 @@ app.use('/api/auth', authRoutes);
 // Social Media Lead Integrations (Verified via Meta Graph API)
 app.all('/api/webhooks/meta', metaWebhookHandler);
 app.use('/api/webhooks', webhooksRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // Protected Routes (Requires valid Supabase JWT)
+app.use('/api/enquiries', requireAuth, enquiriesRoutes);
 app.use('/api/leads', requireAuth, leadsRoutes);
 app.use('/api/contacts', requireAuth, contactsRoutes);
 app.use('/api/companies', requireAuth, companiesRoutes);

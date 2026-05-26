@@ -270,3 +270,13 @@ export interface PurchaseOrder {
   approvedBy: string;
   notes?: string;
 }
+
+export interface Enquiry {
+  id: string;
+  contactName: string;
+  phone: string;
+  lastMessage: string;
+  status: 'New' | 'Converted' | 'Ignored';
+  createdAt: string;
+  updatedAt: string;
+}

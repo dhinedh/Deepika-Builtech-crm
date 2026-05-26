@@ -35,7 +35,7 @@ const sourceData = [
 const COLORS = ['#0D2C5E', '#1B50A0', '#E8622A', '#1D9E75', '#BA7517', '#718096'];
 
 const Dashboard: React.FC = () => {
-  const { leads, projects, followUps } = useCRMStore();
+  const { leads, projects, followUps, fetchLeads, fetchFollowUps } = useCRMStore();
   const navigate = useNavigate();
   
   const todayFollowUps = followUps.filter(f => f.status === 'Pending' || f.status === 'Overdue');
@@ -48,6 +48,10 @@ const Dashboard: React.FC = () => {
       .then(res => res.json())
       .then(data => setBackendStatus(data.message))
       .catch(err => setBackendStatus('Backend disconnected'));
+
+    // Synchronize live data on mount
+    fetchLeads();
+    fetchFollowUps();
   }, []);
 
   return (

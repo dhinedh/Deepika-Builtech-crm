@@ -1,4 +1,37 @@
 {
   "users": [],
-  "crmData": {}
+  "crmData": {},
+  "leads": [
+    {
+      "id": "uuid-x2it6wga5",
+      "created_at": "2026-05-26T10:07:52.422Z",
+      "updated_at": "2026-05-26T10:17:30.917Z",
+      "contactName": "Arun Kumar",
+      "phone": "919876543210",
+      "projectType": "PEB Structure",
+      "location": "Coimbatore, Tamil Nadu",
+      "landArea": "15,000 sq ft",
+      "timeline": "Immediately",
+      "source": "WhatsApp Bot",
+      "status": "New",
+      "leadScore": 90,
+      "notes": "Updated from WhatsApp Bot Flow.\nBudget: Above ₹1 Crore"
+    }
+  ],
+  "contacts": [],
+  "followups": [],
+  "companies": [],
+  "projects": [],
+  "tasks": [],
+  "enquiries": [
+    {
+      "id": "uuid-4pyfnk4dn",
+      "created_at": "2026-05-26T10:17:38.073Z",
+      "updated_at": "2026-05-26T10:17:45.148Z",
+      "contactName": "Vijay Anand",
+      "phone": "919003312345",
+      "lastMessage": "interested in warehouse construction",
+      "status": "New"
+    }
+  ]
 }

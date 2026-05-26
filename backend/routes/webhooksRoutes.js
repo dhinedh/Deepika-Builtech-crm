@@ -130,4 +130,150 @@ router.post('/linkedin', async (req, res) => {
   }
 });
 
+// 3. Webhook endpoint to receive leads from the WhatsApp Bot
+router.post('/whatsapp-bot-lead', async (req, res) => {
+  try {
+    const payload = req.body;
+    console.log('[WhatsApp Bot Webhook Received]', payload);
+
+    const {
+      CustomerName,
+      WhatsAppNumber,
+      ServiceSelected,
+      AreaRequired,
+      SiteLocation,
+      Timeline,
+      BudgetRange,
+      LeadScore,
+      LeadStatus
+    } = payload;
+
+    if (!WhatsAppNumber) {
+      return res.status(400).json({ error: 'Missing WhatsApp number' });
+    }
+
+    // Clean and format phone number
+    const formattedPhone = WhatsAppNumber.replace(/\D/g, '');
+    const finalPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
+
+    // Check if this lead already exists in CRM
+    const { data: existingLeads } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('phone', finalPhone);
+
+    if (existingLeads && existingLeads.length > 0) {
+      console.log(`[WhatsApp Bot Webhook] Lead with phone ${finalPhone} already exists. Updating details.`);
+      
+      const updateData = {
+        contactName: CustomerName || 'WhatsApp Customer',
+        projectType: ServiceSelected || 'PEB / General Enquiry',
+        location: SiteLocation || '',
+        landArea: AreaRequired || '',
+        timeline: Timeline || '',
+        leadScore: LeadScore || 20,
+        status: LeadStatus || 'New',
+        notes: `Updated from WhatsApp Bot Flow.\nBudget: ${BudgetRange || 'Not confirmed'}`,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('leads')
+        .update(updateData)
+        .eq('phone', finalPhone);
+
+      if (error) throw error;
+      
+      return res.status(200).json({ success: true, message: 'Lead updated successfully' });
+    }
+
+    const newLead = {
+      contactName: CustomerName || 'WhatsApp Customer',
+      phone: finalPhone,
+      projectType: ServiceSelected || 'PEB / General Enquiry',
+      location: SiteLocation || '',
+      landArea: AreaRequired || '',
+      timeline: Timeline || '',
+      source: 'WhatsApp Bot',
+      status: LeadStatus || 'New',
+      leadScore: LeadScore || 20,
+      notes: `Captured from WhatsApp Bot Flow.\nBudget: ${BudgetRange || 'Not confirmed'}`
+    };
+
+    const { error } = await supabase
+      .from('leads')
+      .insert([newLead]);
+
+    if (error) throw error;
+
+    console.log(`[WhatsApp Bot Webhook] Created new lead for ${newLead.contactName} (${newLead.phone})`);
+    res.status(201).json({ success: true, message: 'Lead created successfully' });
+  } catch (err) {
+    console.error('[WhatsApp Bot Webhook Error]:', err);
+    res.status(500).json({ error: err.message || 'Internal server error while inserting lead' });
+  }
+});
+
+// 4. Webhook endpoint to receive general enquiries from the WhatsApp Bot
+router.post('/whatsapp-bot-enquiry', async (req, res) => {
+  try {
+    const payload = req.body;
+    console.log('[WhatsApp Bot Enquiry Webhook Received]', payload);
+
+    const { CustomerName, WhatsAppNumber, MessageText } = payload;
+
+    if (!WhatsAppNumber) {
+      return res.status(400).json({ error: 'Missing WhatsApp number' });
+    }
+
+    // Clean and format phone number
+    const formattedPhone = WhatsAppNumber.replace(/\D/g, '');
+    const finalPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
+
+    // Check if this enquiry already exists in CRM enquiries table to avoid duplication
+    const { data: existingEnquiries } = await supabase
+      .from('enquiries')
+      .select('id')
+      .eq('phone', finalPhone);
+
+    if (existingEnquiries && existingEnquiries.length > 0) {
+      console.log(`[WhatsApp Bot Enquiry] Enquiry with phone ${finalPhone} already exists. Updating last message.`);
+      
+      const updateData = {
+        contactName: CustomerName || 'WhatsApp Customer',
+        lastMessage: MessageText || '',
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('enquiries')
+        .update(updateData)
+        .eq('phone', finalPhone);
+
+      if (error) throw error;
+      
+      return res.status(200).json({ success: true, message: 'Enquiry updated successfully' });
+    }
+
+    const newEnquiry = {
+      contactName: CustomerName || 'WhatsApp Customer',
+      phone: finalPhone,
+      lastMessage: MessageText || '',
+      status: 'New'
+    };
+
+    const { error } = await supabase
+      .from('enquiries')
+      .insert([newEnquiry]);
+
+    if (error) throw error;
+
+    console.log(`[WhatsApp Bot Enquiry] Created new enquiry for ${newEnquiry.contactName} (${newEnquiry.phone})`);
+    res.status(201).json({ success: true, message: 'Enquiry created successfully' });
+  } catch (err) {
+    console.error('[WhatsApp Bot Enquiry Webhook Error]:', err);
+    res.status(500).json({ error: err.message || 'Internal server error while inserting enquiry' });
+  }
+});
+
 export default router;

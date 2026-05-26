@@ -30,6 +30,7 @@ const Reports = lazy(() => import('./modules/Reports/Reports'));
 const Settings = lazy(() => import('./modules/Settings/Settings'));
 const Vendors = lazy(() => import('./modules/Vendors/Vendors'));
 const SiteVisits = lazy(() => import('./modules/SiteVisits/SiteVisits'));
+const Enquiries = lazy(() => import('./modules/Enquiries/Enquiries'));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -51,6 +52,7 @@ const App: React.FC = () => {
           {/* Protected Application Routes */}
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+          <Route path="/enquiries" element={<ProtectedRoute><Enquiries /></ProtectedRoute>} />
           <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
           <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
           <Route path="/pipeline" element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />

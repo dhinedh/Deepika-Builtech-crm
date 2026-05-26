@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { secureFetch } from '../services/api';
 import type {
   Lead, Contact, Company, Project, Deal, Task, FollowUp, Quotation,
-  CommunicationLog, SiteVisit, Vendor, PurchaseOrder, User
+  CommunicationLog, SiteVisit, Vendor, PurchaseOrder, User, Enquiry
 } from '../types';
 import { sampleLeads, sampleProjects, sampleUsers, sampleContacts, sampleCompanies, sampleFollowUps } from './sampleData';
 
 interface CRMState {
   leads: Lead[];
+  enquiries: Enquiry[];
   contacts: Contact[];
   companies: Company[];
   projects: Project[];
@@ -23,9 +25,12 @@ interface CRMState {
   currentUser: User | null;
 
   // Actions
+  fetchLeads: () => Promise<void>;
+  fetchEnquiries: () => Promise<void>;
+  fetchFollowUps: () => Promise<void>;
   setLeads: (leads: Lead[]) => void;
-  addLead: (lead: Lead) => void;
-  updateLead: (id: string, updates: Partial<Lead>) => void;
+  addLead: (lead: Lead) => Promise<void>;
+  updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
   
   addContact: (contact: Contact) => void;
   updateContact: (id: string, updates: Partial<Contact>) => void;
@@ -65,6 +70,7 @@ export const useCRMStore = create<CRMState>()(
   persist(
     (set) => ({
       leads: sampleLeads,
+      enquiries: [],
       contacts: sampleContacts,
       companies: sampleCompanies,
       projects: sampleProjects,
@@ -79,11 +85,129 @@ export const useCRMStore = create<CRMState>()(
       users: sampleUsers,
       currentUser: sampleUsers[0],
 
+      fetchEnquiries: async () => {
+        try {
+          const res = await secureFetch('/enquiries');
+          if (res.success && Array.isArray(res.data)) {
+            const mappedEnquiries: Enquiry[] = res.data.map((e: any) => ({
+              id: e.id,
+              contactName: e.contactName || 'WhatsApp Customer',
+              phone: e.phone || '',
+              lastMessage: e.lastMessage || '',
+              status: e.status || 'New',
+              createdAt: e.created_at || e.createdAt || new Date().toISOString(),
+              updatedAt: e.updated_at || e.updatedAt || new Date().toISOString()
+            }));
+            set({ enquiries: mappedEnquiries });
+          }
+        } catch (err) {
+          console.error('Failed to fetch enquiries from backend:', err);
+        }
+      },
+
+      fetchLeads: async () => {
+        try {
+          const res = await secureFetch('/leads');
+          if (res.success && Array.isArray(res.data)) {
+            const mappedLeads: Lead[] = res.data.map((lead: any) => ({
+              id: lead.id,
+              contactName: lead.contactName || 'Unspecified',
+              companyName: lead.companyName || '',
+              phone: lead.phone || '',
+              projectType: lead.projectType || 'PEB',
+              location: lead.location || '',
+              landArea: lead.landArea || '',
+              estimatedBudget: lead.estimatedBudget || 0,
+              timeline: lead.timeline || '',
+              source: lead.source || 'Website',
+              status: lead.status || 'New',
+              leadScore: lead.leadScore || 0,
+              notes: lead.notes || '',
+              createdAt: lead.created_at || lead.createdAt || new Date().toISOString(),
+              updatedAt: lead.updated_at || lead.updatedAt || new Date().toISOString()
+            }));
+            set({ leads: mappedLeads });
+          }
+        } catch (err) {
+          console.error('Failed to fetch leads from backend:', err);
+        }
+      },
+
+      fetchFollowUps: async () => {
+        try {
+          const res = await secureFetch('/followups');
+          if (res.success && Array.isArray(res.data)) {
+            const mappedFollowUps: FollowUp[] = res.data.map((f: any) => ({
+              id: f.id,
+              contactId: f.lead_id || f.contactId || '',
+              linkedToType: 'Lead',
+              linkedToId: f.lead_id || '',
+              type: f.type || 'Phone Call',
+              scheduledDate: f.scheduled_date || f.scheduledDate || new Date().toISOString(),
+              assignedTo: f.assignedTo || 'u1',
+              reminder: '1 day before',
+              status: f.status || 'Pending',
+              notes: f.notes || '',
+              outcome: f.outcome || '',
+              createdAt: f.created_at || new Date().toISOString(),
+              updatedAt: f.updated_at || new Date().toISOString()
+            }));
+            set({ followUps: mappedFollowUps });
+          }
+        } catch (err) {
+          console.error('Failed to fetch followups from backend:', err);
+        }
+      },
+
       setLeads: (leads) => set({ leads }),
-      addLead: (lead) => set((state) => ({ leads: [lead, ...state.leads] })),
-      updateLead: (id, updates) => set((state) => ({
-        leads: state.leads.map((l) => l.id === id ? { ...l, ...updates, updatedAt: new Date().toISOString() } : l)
-      })),
+      
+      addLead: async (lead) => {
+        set((state) => ({ leads: [lead, ...state.leads] }));
+        try {
+          const dbLead = {
+            contactName: lead.contactName,
+            companyName: lead.companyName,
+            phone: lead.phone,
+            projectType: lead.projectType,
+            location: lead.location || '',
+            landArea: lead.landArea || '',
+            source: lead.source,
+            status: lead.status,
+            leadScore: lead.leadScore,
+            notes: lead.notes
+          };
+          await secureFetch('/leads', {
+            method: 'POST',
+            body: JSON.stringify(dbLead)
+          });
+        } catch (err) {
+          console.error('Failed to save new lead to database:', err);
+        }
+      },
+
+      updateLead: async (id, updates) => {
+        set((state) => ({
+          leads: state.leads.map((l) => l.id === id ? { ...l, ...updates, updatedAt: new Date().toISOString() } : l)
+        }));
+        try {
+          const dbUpdates: any = {};
+          if (updates.contactName !== undefined) dbUpdates.contactName = updates.contactName;
+          if (updates.companyName !== undefined) dbUpdates.companyName = updates.companyName;
+          if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+          if (updates.projectType !== undefined) dbUpdates.projectType = updates.projectType;
+          if (updates.location !== undefined) dbUpdates.location = updates.location;
+          if (updates.status !== undefined) dbUpdates.status = updates.status;
+          if (updates.leadScore !== undefined) dbUpdates.leadScore = updates.leadScore;
+          if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+          
+          await secureFetch(`/leads/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(dbUpdates)
+          });
+        } catch (err) {
+          console.error('Failed to sync updated lead to database:', err);
+        }
+      },
 
       addContact: (contact) => set((state) => ({ contacts: [contact, ...state.contacts] })),
       updateContact: (id, updates) => set((state) => ({

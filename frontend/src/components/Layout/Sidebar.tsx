@@ -3,13 +3,14 @@ import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, UserSquare2, Building2, GitBranch, 
   FileText, Briefcase, CheckSquare, CalendarClock, MapPin, 
-  Truck, BarChart3, Settings, Menu, X 
+  Truck, BarChart3, Settings, Menu, X, MessageSquare 
 } from 'lucide-react';
 import './Sidebar.css';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/leads', label: 'Leads', icon: Users },
+  { path: '/enquiries', label: 'Enquiries', icon: MessageSquare },
   { path: '/contacts', label: 'Contacts', icon: UserSquare2 },
   { path: '/companies', label: 'Companies', icon: Building2 },
   { path: '/pipeline', label: 'Pipeline', icon: GitBranch },
