@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 /**
  * Secure fetch wrapper that automatically attaches the Supabase JWT access token
