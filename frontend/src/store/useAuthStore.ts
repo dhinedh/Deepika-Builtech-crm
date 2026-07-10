@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { supabase } from '../services/supabase';
 
 interface User {
   id: string;
@@ -15,7 +16,10 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  isAuthenticated: false, // Set to true if you want to bypass auth temporarily
+  isAuthenticated: false,
   login: (user) => set({ user, isAuthenticated: true }),
-  logout: () => set({ user: null, isAuthenticated: false }),
+  logout: () => {
+    supabase.auth.signOut();
+    set({ user: null, isAuthenticated: false });
+  },
 }));

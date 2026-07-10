@@ -19,18 +19,18 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      // In a real app with Supabase:
-      // const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      // if (error) throw error;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (email && password.length >= 6) {
-        login({ id: '1', email, name: email.split('@')[0] });
+      if (data?.user) {
+        login({ 
+          id: data.user.id, 
+          email: data.user.email || '', 
+          name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] 
+        });
         navigate('/');
       } else {
-        throw new Error('Invalid email or password (min 6 characters)');
+        throw new Error('User data not found');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to login');

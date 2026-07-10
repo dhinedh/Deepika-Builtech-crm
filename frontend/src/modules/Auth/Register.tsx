@@ -28,19 +28,22 @@ const Register: React.FC = () => {
     }
 
     try {
-      // In a real app with Supabase:
-      // const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
-      // if (error) throw error;
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password, 
+        options: { data: { full_name: name } } 
+      });
+      if (error) throw error;
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (email && password.length >= 6) {
-        // Automatically log in after registration
-        login({ id: Math.random().toString(36).substring(7), email, name });
+      if (data?.user) {
+        login({ 
+          id: data.user.id, 
+          email: data.user.email || '', 
+          name: data.user.user_metadata?.full_name || name 
+        });
         navigate('/');
       } else {
-        throw new Error('Password must be at least 6 characters');
+        throw new Error('User creation failed');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to register');

@@ -1,6 +1,7 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
+import { supabase } from './services/supabase';
 import Layout from './components/Layout/Layout';
 
 // Loading Fallback for Suspense
@@ -41,6 +42,47 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App: React.FC = () => {
+  const login = useAuthStore(state => state.login);
+  const logout = useAuthStore(state => state.logout);
+  const [initializing, setInitializing] = useState(true);
+
+  useEffect(() => {
+    // Check active session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        login({
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
+        });
+      } else {
+        logout();
+      }
+      setInitializing(false);
+    });
+
+    // Listen for auth state changes (sign-in, sign-out, session refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        login({
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
+        });
+      } else {
+        logout();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [login, logout]);
+
+  if (initializing) {
+    return <FullPageLoader />;
+  }
+
   return (
     <Router>
       <Suspense fallback={<FullPageLoader />}>
