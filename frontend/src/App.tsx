@@ -48,18 +48,25 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Check active session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        login({
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
-        });
-      } else {
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (session?.user) {
+          login({
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
+          });
+        } else {
+          logout();
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to restore Supabase session on startup:", error);
         logout();
-      }
-      setInitializing(false);
-    });
+      })
+      .finally(() => {
+        setInitializing(false);
+      });
 
     // Listen for auth state changes (sign-in, sign-out, session refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
