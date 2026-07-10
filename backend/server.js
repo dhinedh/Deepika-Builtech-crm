@@ -40,11 +40,19 @@ startCronJobs();
 
 app.use(helmet());
 app.use(compression());
-// Robust CORS configuration supporting comma-separated multiple origins and trailing slash cleanups
-const rawAllowedOrigins = process.env.FRONTEND_URL || 'http://localhost:5173';
-const allowedOrigins = rawAllowedOrigins
-  .split(',')
-  .map(origin => origin.trim().replace(/\/$/, ''));
+// Robust CORS configuration supporting default domains and comma-separated custom origins
+const defaultOrigins = [
+  'http://localhost:5173',
+  'https://crm.deepikabuiltech.com',
+  'https://deepika-builtech-crm.vercel.app'
+];
+const rawAllowedOrigins = process.env.FRONTEND_URL || '';
+const configuredOrigins = rawAllowedOrigins
+  ? rawAllowedOrigins.split(',').map(origin => origin.trim().replace(/\/$/, ''))
+  : [];
+
+// Merge lists to guarantee custom domains work even if environment variables are not updated yet
+const allowedOrigins = [...new Set([...defaultOrigins, ...configuredOrigins])];
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -53,8 +61,8 @@ app.use(cors({
     if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes('*')) {
       callback(null, true);
     } else {
-      console.warn(`[CORS Blocked] Request origin: ${origin} not found in:`, allowedOrigins);
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
+      console.warn(`[CORS Blocked] Request origin: ${origin} not found in allowed list.`);
+      callback(null, false);
     }
   },
   credentials: true
