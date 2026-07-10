@@ -40,8 +40,23 @@ startCronJobs();
 
 app.use(helmet());
 app.use(compression());
+// Robust CORS configuration supporting comma-separated multiple origins and trailing slash cleanups
+const rawAllowedOrigins = process.env.FRONTEND_URL || 'http://localhost:5173';
+const allowedOrigins = rawAllowedOrigins
+  .split(',')
+  .map(origin => origin.trim().replace(/\/$/, ''));
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const cleanOrigin = origin.trim().replace(/\/$/, '');
+    if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS Blocked] Request origin: ${origin} not found in:`, allowedOrigins);
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
   credentials: true
 }));
 
