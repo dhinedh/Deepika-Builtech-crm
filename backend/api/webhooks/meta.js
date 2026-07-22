@@ -1,11 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../../config/supabase.js';
 import axios from 'axios';
-
-// ✅ Standalone Initialization
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY
-);
 
 /**
  * Internal helper to send the 'follow_up_lead' template
@@ -52,6 +46,44 @@ async function sendFollowUpLead(phone, customerName) {
   }
 }
 
+/**
+ * Helper to fetch Facebook/Instagram user profile name using Page/IG access token
+ */
+async function getMetaUserProfile(senderId, platform) {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  if (!token) {
+    console.warn('⚠️ Missing Meta Access Token for profile lookup');
+    return null;
+  }
+  
+  try {
+    if (platform === 'facebook') {
+      const res = await axios.get(`https://graph.facebook.com/v18.0/${senderId}`, {
+        params: {
+          fields: 'first_name,last_name',
+          access_token: token
+        }
+      });
+      if (res.data && (res.data.first_name || res.data.last_name)) {
+        return `${res.data.first_name || ''} ${res.data.last_name || ''}`.trim();
+      }
+    } else if (platform === 'instagram') {
+      const res = await axios.get(`https://graph.facebook.com/v18.0/${senderId}`, {
+        params: {
+          fields: 'username,name',
+          access_token: token
+        }
+      });
+      if (res.data) {
+        return res.data.name || res.data.username || null;
+      }
+    }
+  } catch (err) {
+    console.warn(`[Meta Profile Fetch Failed] senderId: ${senderId}, platform: ${platform}, error: ${err.message}`);
+  }
+  return null;
+}
+
 export default async function handler(req, res) {
   // ✅ Handle GET (Verification)
   if (req.method === 'GET') {
@@ -69,42 +101,89 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       const body = req.body;
-      if (body.object !== 'whatsapp_business_account') {
+      if (body.object !== 'whatsapp_business_account' && body.object !== 'page' && body.object !== 'instagram') {
         return res.status(404).send('Not Found');
       }
 
-      const changes = body.entry?.[0]?.changes?.[0]?.value;
-      if (changes?.messages) {
-        const msg          = changes.messages[0];
-        const contact      = changes.contacts?.[0];
-        const phone        = msg.from;
-        const messageText  = msg.text?.body?.toLowerCase() || '';
-        const customerName = contact?.profile?.name || 'Customer';
+      // 1. Handle WhatsApp Messages
+      if (body.object === 'whatsapp_business_account') {
+        const changes = body.entry?.[0]?.changes?.[0]?.value;
+        if (changes?.messages) {
+          const msg          = changes.messages[0];
+          const contact      = changes.contacts?.[0];
+          const phone        = msg.from;
+          const messageText  = msg.text?.body?.toLowerCase() || '';
+          const customerName = contact?.profile?.name || 'Customer';
 
-        // Check Duplicates
-        const { data: existingLeads } = await supabase.from('leads').select('id').eq('phone', phone);
-        const { data: existingContacts } = await supabase.from('contacts').select('id').eq('phone', phone);
-        const isExisting = (existingLeads?.length > 0) || (existingContacts?.length > 0);
+          // Check Duplicates
+          const { data: existingLeads } = await supabase.from('leads').select('id').eq('phone', phone);
+          const { data: existingContacts } = await supabase.from('contacts').select('id').eq('phone', phone);
+          const isExisting = (existingLeads?.length > 0) || (existingContacts?.length > 0);
 
-        if (!isExisting) {
-          const keywords = ['hi', 'hello', 'interested', 'price', 'cost', 'quote', 'details', 'buy', 'service', 'help', 'inquiry'];
-          const isLeadIntent = keywords.some(kw => messageText.includes(kw)) || messageText === '';
+          if (!isExisting) {
+            const keywords = ['hi', 'hello', 'interested', 'price', 'cost', 'quote', 'details', 'buy', 'service', 'help', 'inquiry'];
+            const isLeadIntent = keywords.some(kw => messageText.includes(kw)) || messageText === '';
 
-          if (isLeadIntent) {
-            const { error } = await supabase.from('leads').insert([{
-              contactName:  customerName,
-              phone:        phone,
-              source:       'WhatsApp',
-              status:       'New',
-              notes:        `Inquiry: ${msg.text?.body || 'Media'}`
-            }]);
+            if (isLeadIntent) {
+              const { error } = await supabase.from('leads').insert([{
+                contactName:  customerName,
+                phone:        phone,
+                source:       'WhatsApp',
+                status:       'New',
+                notes:        `Inquiry: ${msg.text?.body || 'Media'}`
+              }]);
 
-            if (!error) {
-              await sendFollowUpLead(phone, customerName);
+              if (!error) {
+                await sendFollowUpLead(phone, customerName);
+              }
             }
           }
         }
       }
+
+      // 2. Handle Facebook Messenger & Instagram DM
+      if (body.object === 'page' || body.object === 'instagram') {
+        const entry = body.entry?.[0];
+        if (entry && entry.messaging) {
+          const messaging = entry.messaging[0];
+          if (messaging && messaging.message) {
+            const senderId = messaging.sender?.id;
+            const messageText = messaging.message.text || '';
+            const messageTextLower = messageText.toLowerCase();
+            const platform = body.object === 'page' ? 'facebook' : 'instagram';
+            const phoneIdentifier = platform === 'facebook' ? `fb:${senderId}` : `ig:${senderId}`;
+
+            // Check Duplicates
+            const { data: existingLeads } = await supabase.from('leads').select('id').eq('phone', phoneIdentifier);
+            const { data: existingContacts } = await supabase.from('contacts').select('id').eq('phone', phoneIdentifier);
+            const isExisting = (existingLeads?.length > 0) || (existingContacts?.length > 0);
+
+            if (!isExisting) {
+              const keywords = ['hi', 'hello', 'interested', 'price', 'cost', 'quote', 'details', 'buy', 'service', 'help', 'inquiry'];
+              const isLeadIntent = keywords.some(kw => messageTextLower.includes(kw)) || messageText === '';
+
+              if (isLeadIntent) {
+                const customerName = await getMetaUserProfile(senderId, platform) || (platform === 'facebook' ? 'Facebook Customer' : 'Instagram Customer');
+                
+                const { error } = await supabase.from('leads').insert([{
+                  contactName:  customerName,
+                  phone:        phoneIdentifier,
+                  source:       platform === 'facebook' ? 'Facebook Messenger' : 'Instagram DM',
+                  status:       'New',
+                  notes:        `Inquiry: ${messageText || 'Media/Attachment'}`
+                }]);
+
+                if (error) {
+                  console.error(`[${platform.toUpperCase()} Webhook DB Error]:`, error.message);
+                } else {
+                  console.log(`[${platform.toUpperCase()} Lead Captured] Added ${customerName} to CRM.`);
+                }
+              }
+            }
+          }
+        }
+      }
+
       return res.status(200).send('EVENT_RECEIVED');
     } catch (err) {
       console.error('❌ Webhook Error:', err.message);

@@ -1,8 +1,47 @@
 import express from 'express';
+import axios from 'axios';
 import { supabase } from '../config/supabase.js';
 import { sendFollowUpLead } from '../whatsappService.js';
 
 const router = express.Router();
+
+/**
+ * Helper to fetch Facebook/Instagram user profile name using Page/IG access token
+ */
+async function getMetaUserProfile(senderId, platform) {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  if (!token) {
+    console.warn('⚠️ Missing Meta Access Token for profile lookup');
+    return null;
+  }
+  
+  try {
+    if (platform === 'facebook') {
+      const res = await axios.get(`https://graph.facebook.com/v18.0/${senderId}`, {
+        params: {
+          fields: 'first_name,last_name',
+          access_token: token
+        }
+      });
+      if (res.data && (res.data.first_name || res.data.last_name)) {
+        return `${res.data.first_name || ''} ${res.data.last_name || ''}`.trim();
+      }
+    } else if (platform === 'instagram') {
+      const res = await axios.get(`https://graph.facebook.com/v18.0/${senderId}`, {
+        params: {
+          fields: 'username,name',
+          access_token: token
+        }
+      });
+      if (res.data) {
+        return res.data.name || res.data.username || null;
+      }
+    }
+  } catch (err) {
+    console.warn(`[Meta Profile Fetch Failed] senderId: ${senderId}, platform: ${platform}, error: ${err.message}`);
+  }
+  return null;
+}
 
 /**
  * ==========================================
@@ -96,9 +135,66 @@ router.post('/meta', async (req, res) => {
         }
       }
       
-      // Handle Facebook Page / Instagram Lead Generation Ads
+      // Handle Facebook Page / Instagram Lead Generation Ads OR Direct Messages
       if (body.object === 'page' || body.object === 'instagram') {
-        const changes = body.entry?.[0]?.changes?.[0];
+        const entry = body.entry?.[0];
+        
+        // 1. Handle Direct Messages (Messenger / Instagram DM)
+        if (entry && entry.messaging) {
+          const messaging = entry.messaging[0];
+          if (messaging && messaging.message) {
+            const senderId = messaging.sender?.id;
+            const messageText = messaging.message.text || '';
+            const messageTextLower = messageText.toLowerCase();
+            const platform = body.object === 'page' ? 'facebook' : 'instagram';
+            const phoneIdentifier = platform === 'facebook' ? `fb:${senderId}` : `ig:${senderId}`;
+
+            // Check Duplicates
+            const { data: existingLeads } = await supabase
+              .from('leads')
+              .select('id')
+              .eq('phone', phoneIdentifier);
+              
+            const { data: existingContacts } = await supabase
+              .from('contacts')
+              .select('id')
+              .eq('phone', phoneIdentifier);
+
+            const isExisting = (existingLeads && existingLeads.length > 0) || 
+                               (existingContacts && existingContacts.length > 0);
+
+            if (isExisting) {
+              console.log(`[${platform.toUpperCase()} Filter] Message ignored - ${phoneIdentifier} is already an active Lead/Contact.`);
+            } else {
+              const leadKeywords = ['hi', 'hello', 'interested', 'price', 'cost', 'quote', 'details', 'buy', 'service', 'help', 'inquiry'];
+              const isLeadIntent = leadKeywords.some(keyword => messageTextLower.includes(keyword)) || messageText === '';
+
+              if (isLeadIntent) {
+                const customerName = await getMetaUserProfile(senderId, platform) || (platform === 'facebook' ? 'Facebook Customer' : 'Instagram Customer');
+                
+                const newLead = {
+                  contactName: customerName,
+                  phone: phoneIdentifier,
+                  source: platform === 'facebook' ? 'Facebook Messenger' : 'Instagram DM',
+                  status: 'New',
+                  projectType: 'Unspecified',
+                  leadScore: 20,
+                  notes: `Initial Inquiry: ${messageText || 'Media/Attachment sent'}`
+                };
+                
+                const { error } = await supabase.from('leads').insert([newLead]);
+                if (error) {
+                  console.error(`[${platform.toUpperCase()} Webhook DB Error]:`, error.message);
+                } else {
+                  console.log(`[${platform.toUpperCase()} Lead Captured] Added ${customerName} to CRM.`);
+                }
+              }
+            }
+          }
+        }
+        
+        // 2. Handle Leadgen webhook events (Lead Gen forms)
+        const changes = entry?.changes?.[0];
         if (changes && changes.field === 'leadgen') {
           const leadId = changes.value.leadgen_id;
           console.log(`[FB/IG Lead Gen Triggered] Lead ID to process: ${leadId}`);

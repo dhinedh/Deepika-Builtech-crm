@@ -115,6 +115,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onClose, initialData }) => {
         >
           <option value="Website Form">Website Form</option>
           <option value="WhatsApp">WhatsApp</option>
+          <option value="Instagram DM">Instagram DM</option>
+          <option value="Facebook Messenger">Facebook Messenger</option>
           <option value="Phone Call">Phone Call</option>
           <option value="Referral">Referral</option>
           <option value="Google Search">Google Search</option>
