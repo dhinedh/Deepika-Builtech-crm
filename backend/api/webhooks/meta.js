@@ -87,10 +87,10 @@ async function getMetaUserProfile(senderId, platform) {
 /**
  * Helper to send interactive auto-reply on Facebook Messenger or Instagram DM directly from CRM backend
  */
-async function sendMetaAutoReply(senderId, platform, messageText) {
-  const token = process.env.WHATSAPP_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN;
+async function sendMetaAutoReply(senderId, recipientId, platform, messageText) {
+  const token = process.env.PAGE_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN;
   if (!token) {
-    console.warn('⚠️ Missing Meta Access Token for auto-reply');
+    console.warn('⚠️ Missing Meta/Page Access Token for auto-reply');
     return;
   }
 
@@ -112,10 +112,13 @@ async function sendMetaAutoReply(senderId, platform, messageText) {
     replyText = `📋 Get a Free Quote!\n\nPlease share:\n1. Required Area (sq ft)\n2. Site Location\n3. Start Timeline\n\nOur team will prepare a detailed quotation for you within 2 hours!\n\n📞 Or call us directly: +91 96000 67611`;
   }
 
+  const targetUrl = recipientId ? `https://graph.facebook.com/v18.0/${recipientId}/messages` : `https://graph.facebook.com/v18.0/me/messages`;
+
+  // Attempt 1: Send with Quick Replies
   try {
     await axios({
       method: 'POST',
-      url: `https://graph.facebook.com/v18.0/me/messages`,
+      url: targetUrl,
       params: { access_token: token },
       headers: { 'Content-Type': 'application/json' },
       data: {
@@ -127,8 +130,26 @@ async function sendMetaAutoReply(senderId, platform, messageText) {
       }
     });
     console.log(`✅ [${platform.toUpperCase()} Auto-Reply Sent] to senderId ${senderId}`);
+    return;
   } catch (err) {
-    console.error(`❌ [${platform.toUpperCase()} Auto-Reply Error]:`, err.response?.data || err.message);
+    console.warn(`[${platform.toUpperCase()} Quick-Reply Failed, retrying text-only]:`, err.response?.data || err.message);
+  }
+
+  // Attempt 2: Fallback to plain text if Quick Replies fail or unsupported on platform
+  try {
+    await axios({
+      method: 'POST',
+      url: targetUrl,
+      params: { access_token: token },
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        recipient: { id: senderId },
+        message: { text: replyText }
+      }
+    });
+    console.log(`✅ [${platform.toUpperCase()} Plain Text Auto-Reply Sent] to senderId ${senderId}`);
+  } catch (fallbackErr) {
+    console.error(`❌ [${platform.toUpperCase()} Auto-Reply Final Error]:`, fallbackErr.response?.data || fallbackErr.message);
   }
 }
 
@@ -194,8 +215,10 @@ export default async function handler(req, res) {
         const entry = body.entry?.[0];
         if (entry && entry.messaging) {
           const messaging = entry.messaging[0];
-          if (messaging && messaging.message) {
+          // Filter out echoes sent by the page itself
+          if (messaging && messaging.message && !messaging.message.is_echo) {
             const senderId = messaging.sender?.id;
+            const recipientId = messaging.recipient?.id;
             const messageText = messaging.message.text || messaging.message.quick_reply?.payload || '';
             const messageTextLower = messageText.toLowerCase();
             const platform = body.object === 'page' ? 'facebook' : 'instagram';
@@ -230,7 +253,7 @@ export default async function handler(req, res) {
             }
 
             // Send direct auto-reply back to Facebook Messenger / Instagram DM
-            await sendMetaAutoReply(senderId, platform, messageText);
+            await sendMetaAutoReply(senderId, recipientId, platform, messageText);
 
             // Also forward the webhook event to external bot server if configured
             const botServerUrl = process.env.BOT_SERVER_URL;
