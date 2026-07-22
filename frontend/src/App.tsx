@@ -4,12 +4,11 @@ import { useAuthStore } from './store/useAuthStore';
 import { supabase } from './services/supabase';
 import Layout from './components/Layout/Layout';
 
-// Loading Fallback for Suspense
 const FullPageLoader = () => (
-  <div className="flex h-screen w-full items-center justify-center bg-gray-50">
-    <div className="flex flex-col items-center">
-      <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent mb-4"></div>
-      <p className="text-gray-600 font-medium">Loading Module...</p>
+  <div style={{ display: 'flex', height: '100vh', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4f8fd', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ width: '44px', height: '44px', borderRadius: '50%', border: '4px solid #1b50a0', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite', marginBottom: '16px' }}></div>
+      <p style={{ color: '#4a5568', fontWeight: 500 }}>Loading Module...</p>
     </div>
   </div>
 );
