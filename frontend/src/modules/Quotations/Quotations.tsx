@@ -54,27 +54,6 @@ const Quotations: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {/* Sample row since quotations might be empty */}
-            <tr>
-              <td><span className="font-600">Q-2026-001</span></td>
-              <td>15/04/2026</td>
-              <td>
-                <div className="flex flex-col">
-                  <span className="font-600">Kanchipuram Logistics</span>
-                  <span className="muted-text">PEB Warehouse</span>
-                </div>
-              </td>
-              <td><span className="font-600">₹ 45,00,000</span></td>
-              <td><span className="badge badge-success">Approved</span></td>
-              <td>Rev 2</td>
-              <td>
-                <div className="action-buttons">
-                  <button className="icon-btn" title="Download PDF" onClick={() => alert('PDF generation coming soon')}><Download size={16} /></button>
-                  <button className="icon-btn" title="Revise" onClick={() => alert('Quotation revision coming soon')}><RotateCcw size={16} /></button>
-                  <button className="icon-btn" onClick={() => alert('More options coming soon')}><MoreHorizontal size={16} /></button>
-                </div>
-              </td>
-            </tr>
             {quotations.map(quote => (
               <tr key={quote.id}>
                 <td><span className="font-600">{quote.id}</span></td>

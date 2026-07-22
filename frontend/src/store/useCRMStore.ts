@@ -69,21 +69,21 @@ interface CRMState {
 export const useCRMStore = create<CRMState>()(
   persist(
     (set) => ({
-      leads: sampleLeads,
+      leads: [],
       enquiries: [],
-      contacts: sampleContacts,
-      companies: sampleCompanies,
-      projects: sampleProjects,
+      contacts: [],
+      companies: [],
+      projects: [],
       deals: [],
       tasks: [],
-      followUps: sampleFollowUps,
+      followUps: [],
       quotations: [],
       communications: [],
       siteVisits: [],
       vendors: [],
       pos: [],
       users: sampleUsers,
-      currentUser: sampleUsers[0],
+      currentUser: sampleUsers[0] || null,
 
       fetchEnquiries: async () => {
         try {

@@ -17,14 +17,7 @@ const Tasks: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
 
-  // Sample tasks if store is empty
-  const sampleTasks = [
-    { id: 'T1', title: 'Call Rajesh for warehouse dimensions', type: 'Call Client', priority: 'High', dueDate: new Date().toISOString(), status: 'To Do', linkedToType: 'Lead', linkedToId: 'L-2026-001' },
-    { id: 'T2', title: 'Prepare quotation for Cold Storage', type: 'Send Quotation', priority: 'Medium', dueDate: new Date().toISOString(), status: 'In Progress', linkedToType: 'Lead', linkedToId: 'L-2026-002' },
-    { id: 'T3', title: 'Site visit for factory project', type: 'Site Visit', priority: 'High', dueDate: new Date(Date.now() - 86400000).toISOString(), status: 'To Do', linkedToType: 'Project', linkedToId: 'P-2026-003' },
-  ];
-
-  const displayTasks = tasks.length > 0 ? tasks : sampleTasks;
+  const displayTasks = tasks;
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
