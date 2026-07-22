@@ -1,6 +1,44 @@
 import { supabase } from '../../config/supabase.js';
 import axios from 'axios';
 
+// In-memory conversation state store for Meta Messenger & Instagram DM
+const userSessions = new Map();
+
+function getUserSession(id) {
+  if (!userSessions.has(id)) {
+    userSessions.set(id, {
+      quote_step: 0,
+      selected_service: 'PEB / General Enquiry',
+      area_required: '',
+      site_location: '',
+      project_timeline: '',
+      budget_range: '',
+      is_paused: false
+    });
+  }
+  return userSessions.get(id);
+}
+
+function calculateLeadScore(session) {
+  let score = 0;
+  const budget = session.budget_range;
+  if (budget === "Above ₹1 Crore" || budget === "₹50L–₹1Cr") score += 40;
+  else if (budget === "₹20–50 Lakhs") score += 25;
+  else if (budget === "Under ₹20 Lakhs") score += 10;
+
+  const timeline = session.project_timeline;
+  if (timeline === "Immediately") score += 30;
+  else if (timeline === "1–3 months") score += 20;
+  else if (timeline === "3–6 months") score += 10;
+  else if (timeline === "Just planning") score += 5;
+
+  const service = session.selected_service || '';
+  if (service.includes("Godown") || service.includes("Cold") || service.includes("PEB")) score += 15;
+
+  if (session.site_location && (session.site_location.toLowerCase().includes("tamil nadu") || session.site_location.toLowerCase().includes("chennai"))) score += 10;
+  return score;
+}
+
 /**
  * Internal helper to send the 'follow_up_lead' template
  */
@@ -50,7 +88,7 @@ async function sendFollowUpLead(phone, customerName) {
  * Helper to fetch Facebook/Instagram user profile name using Page/IG access token
  */
 async function getMetaUserProfile(senderId, platform) {
-  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  const token = process.env.PAGE_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN;
   if (!token) {
     console.warn('⚠️ Missing Meta Access Token for profile lookup');
     return null;
@@ -85,57 +123,46 @@ async function getMetaUserProfile(senderId, platform) {
 }
 
 /**
- * Helper to send interactive auto-reply on Facebook Messenger or Instagram DM directly from CRM backend
+ * Helper to send messages (with optional quick replies) to Facebook Messenger or Instagram DM
  */
-async function sendMetaAutoReply(senderId, recipientId, platform, messageText) {
+async function sendMetaChatMessage(senderId, recipientId, platform, text, quickRepliesArray = null) {
   const token = process.env.PAGE_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN;
   if (!token) {
-    console.warn('⚠️ Missing Meta/Page Access Token for auto-reply');
+    console.warn('⚠️ Missing Meta/Page Access Token for sending chat message');
     return;
-  }
-
-  const msgLower = (messageText || '').toLowerCase().trim();
-
-  let replyText = `🏗️ Welcome to Deepika Builtech Engineering!\n\nTamil Nadu's most trusted Pre-Engineered Building (PEB) specialists — based in Chennai.\n\n🏆 Excellence Award 2025\n✅ 10+ Years of Experience\n✅ 150+ Projects Delivered\n✅ 3 Manufacturing Units\n\nHow can we help you today?\n1️⃣ About Us\n2️⃣ Our Services\n3️⃣ Get a Free Quote\n4️⃣ Contact & Locations\n\n📞 Call/WhatsApp: +91 96000 67611\n🌐 deepikabuiltech.com`;
-
-  const quickReplies = [
-    { content_type: 'text', title: '1 - About Us', payload: 'btn_about' },
-    { content_type: 'text', title: '2 - Services', payload: 'btn_services' },
-    { content_type: 'text', title: '3 - Free Quote', payload: 'btn_quote' }
-  ];
-
-  if (msgLower === '1' || msgLower.includes('about') || msgLower === 'btn_about') {
-    replyText = `🏢 About Deepika Builtech Engineering\n\nWe design, fabricate and erect high-quality PEB structures, warehouses, cold storages, mezzanine floors & industrial sheds across Tamil Nadu.\n\n📍 Locations: Chennai, Kanchipuram, Thiruvallur\n\n📞 Call/WhatsApp: +91 96000 67611`;
-  } else if (msgLower === '2' || msgLower.includes('service') || msgLower === 'btn_services') {
-    replyText = `🔧 Our Services:\n\n1. PEB Structures (Factories & Warehouses)\n2. Mezzanine Floors (Space Expansion)\n3. Cold Storage Facilities\n4. Industrial Shed Fabrication\n5. Godown Construction\n6. Civil Foundation Works\n\n📞 Call: +91 96000 67611`;
-  } else if (msgLower === '3' || msgLower.includes('quote') || msgLower === 'btn_quote') {
-    replyText = `📋 Get a Free Quote!\n\nPlease share:\n1. Required Area (sq ft)\n2. Site Location\n3. Start Timeline\n\nOur team will prepare a detailed quotation for you within 2 hours!\n\n📞 Or call us directly: +91 96000 67611`;
   }
 
   const targetUrl = recipientId ? `https://graph.facebook.com/v18.0/${recipientId}/messages` : `https://graph.facebook.com/v18.0/me/messages`;
 
-  // Attempt 1: Send with Quick Replies
-  try {
-    await axios({
-      method: 'POST',
-      url: targetUrl,
-      params: { access_token: token },
-      headers: { 'Content-Type': 'application/json' },
-      data: {
-        recipient: { id: senderId },
-        message: {
-          text: replyText,
-          quick_replies: quickReplies
-        }
-      }
-    });
-    console.log(`✅ [${platform.toUpperCase()} Auto-Reply Sent] to senderId ${senderId}`);
-    return;
-  } catch (err) {
-    console.warn(`[${platform.toUpperCase()} Quick-Reply Failed, retrying text-only]:`, err.response?.data || err.message);
+  const payload = {
+    recipient: { id: senderId },
+    message: { text }
+  };
+
+  if (quickRepliesArray && quickRepliesArray.length > 0) {
+    payload.message.quick_replies = quickRepliesArray.map(btn => ({
+      content_type: 'text',
+      title: btn.title.substring(0, 20),
+      payload: btn.id
+    }));
   }
 
-  // Attempt 2: Fallback to plain text if Quick Replies fail or unsupported on platform
+  // Attempt 1: Send with quick replies
+  try {
+    await axios({
+      method: 'POST',
+      url: targetUrl,
+      params: { access_token: token },
+      headers: { 'Content-Type': 'application/json' },
+      data: payload
+    });
+    console.log(`✅ [${platform.toUpperCase()} Chat Response Sent] to senderId ${senderId}`);
+    return;
+  } catch (err) {
+    console.warn(`[${platform.toUpperCase()} Quick-Reply Failed, retrying plain text]:`, err.response?.data || err.message);
+  }
+
+  // Attempt 2: Fallback to plain text if Quick Replies unsupported or fail
   try {
     await axios({
       method: 'POST',
@@ -144,13 +171,171 @@ async function sendMetaAutoReply(senderId, recipientId, platform, messageText) {
       headers: { 'Content-Type': 'application/json' },
       data: {
         recipient: { id: senderId },
-        message: { text: replyText }
+        message: { text }
       }
     });
-    console.log(`✅ [${platform.toUpperCase()} Plain Text Auto-Reply Sent] to senderId ${senderId}`);
+    console.log(`✅ [${platform.toUpperCase()} Plain Text Response Sent] to senderId ${senderId}`);
   } catch (fallbackErr) {
-    console.error(`❌ [${platform.toUpperCase()} Auto-Reply Final Error]:`, fallbackErr.response?.data || fallbackErr.message);
+    console.error(`❌ [${platform.toUpperCase()} Chat Send Final Error]:`, fallbackErr.response?.data || fallbackErr.message);
   }
+}
+
+/**
+ * Complete Interactive Chatbot State Machine for Meta (Messenger & Instagram)
+ */
+async function handleMetaChatbot(senderId, recipientId, platform, messageText, customerName) {
+  const phoneIdentifier = platform === 'facebook' ? `fb:${senderId}` : `ig:${senderId}`;
+  const session = getUserSession(phoneIdentifier);
+  
+  if (session.is_paused) return; // Human takeover active
+
+  const msg = messageText.trim();
+  const msgLower = msg.toLowerCase();
+
+  // Human Takeover check
+  if (msgLower === "5" || msgLower === "btn_human" || msgLower.includes("human") || msgLower.includes("agent") || msgLower.includes("talk to someone")) {
+    session.is_paused = true;
+    await sendMetaChatMessage(senderId, recipientId, platform, `👋 *Connecting you to our team!*\n\nOur team member will respond to you shortly. In the meantime, you can also reach us directly:\n\n📞 *Call/WhatsApp:* +91 96000 67611\n\n_Average response time: under 30 minutes during working hours (9 AM – 6 PM)_`);
+    return;
+  }
+
+  // --- QUOTE COLLECTION QUESTIONNAIRE FLOW ---
+  if (session.quote_step === 1) {
+    session.area_required = msg;
+    session.quote_step = 2;
+    await sendMetaChatMessage(senderId, recipientId, platform, `✅ Thank you!\n\n━━━━━━━━━━━━━━━━━\n❓ *Question 2 of 4*\n\n*Where is your project site located?*\n\n_Please type your answer_\n_(City, district or address — Example: Chennai · Hosur · Kanchipuram)_`);
+    return;
+  }
+
+  if (session.quote_step === 2) {
+    session.site_location = msg;
+    session.quote_step = 3;
+    await sendMetaChatMessage(senderId, recipientId, platform, `📍 Perfect!\n\n━━━━━━━━━━━━━━━━━\n❓ *Question 3 of 4*\n\n*When do you plan to start the project?*\n\n1️⃣ ⚡ Immediately — within 1 month\n2️⃣ 📅 In 1 to 3 months\n3️⃣ 🗓️ In 3 to 6 months\n4️⃣ 💭 Just planning — no fixed date\n\n_Reply with a number or select below_`, [
+      { id: "1", title: "1 - Immediately" },
+      { id: "2", title: "2 - In 1-3 months" },
+      { id: "3", title: "3 - In 3-6 months" },
+      { id: "4", title: "4 - Just planning" }
+    ]);
+    return;
+  }
+
+  if (session.quote_step === 3) {
+    if (msgLower === "1" || msgLower.includes("immediately")) session.project_timeline = "Immediately";
+    else if (msgLower === "2" || msgLower.includes("1-3")) session.project_timeline = "1–3 months";
+    else if (msgLower === "3" || msgLower.includes("3-6")) session.project_timeline = "3–6 months";
+    else if (msgLower === "4" || msgLower.includes("planning")) session.project_timeline = "Just planning";
+    else session.project_timeline = msg;
+
+    session.quote_step = 4;
+    await sendMetaChatMessage(senderId, recipientId, platform, `🗓️ Noted!\n\n━━━━━━━━━━━━━━━━━\n❓ *Question 4 of 4*\n\n*What is your approximate project budget?*\n\n1️⃣ Under ₹20 Lakhs\n2️⃣ ₹20 Lakhs – ₹50 Lakhs\n3️⃣ ₹50 Lakhs – ₹1 Crore\n4️⃣ Above ₹1 Crore\n5️⃣ Not sure yet\n\n_Reply with a number or select below_`, [
+      { id: "1", title: "1 - Under 20L" },
+      { id: "2", title: "2 - 20L to 50L" },
+      { id: "3", title: "3 - 50L to 1Cr" },
+      { id: "4", title: "4 - Above 1Cr" },
+      { id: "5", title: "5 - Not sure" }
+    ]);
+    return;
+  }
+
+  if (session.quote_step === 4) {
+    if (msgLower === "1") session.budget_range = "Under ₹20 Lakhs";
+    else if (msgLower === "2") session.budget_range = "₹20–50 Lakhs";
+    else if (msgLower === "3") session.budget_range = "₹50L–₹1Cr";
+    else if (msgLower === "4") session.budget_range = "Above ₹1 Crore";
+    else if (msgLower === "5") session.budget_range = "Not confirmed yet";
+    else session.budget_range = msg;
+
+    session.quote_step = 0;
+    const score = calculateLeadScore(session);
+
+    // Save completed lead into Supabase
+    try {
+      const { data: existingLeads } = await supabase.from('leads').select('id').eq('phone', phoneIdentifier);
+      if (existingLeads && existingLeads.length > 0) {
+        await supabase.from('leads').update({
+          contactName: customerName,
+          projectType: session.selected_service,
+          location: session.site_location,
+          landArea: session.area_required,
+          timeline: session.project_timeline,
+          leadScore: score,
+          status: 'New',
+          notes: `Completed Quote Flow via ${platform.toUpperCase()}.\nBudget: ${session.budget_range}`,
+          updated_at: new Date().toISOString()
+        }).eq('phone', phoneIdentifier);
+      } else {
+        await supabase.from('leads').insert([{
+          contactName: customerName,
+          phone: phoneIdentifier,
+          projectType: session.selected_service,
+          location: session.site_location,
+          landArea: session.area_required,
+          timeline: session.project_timeline,
+          source: platform === 'facebook' ? 'Facebook Messenger' : 'Instagram DM',
+          status: 'New',
+          leadScore: score,
+          notes: `Captured via ${platform.toUpperCase()} Chatbot Quote Flow.\nBudget: ${session.budget_range}`
+        }]);
+      }
+    } catch (dbErr) {
+      console.error('[Supabase Lead Save Error]:', dbErr.message);
+    }
+
+    const summary = `🎉 *Thank you for your patience!*\n\nWe have received all your details.\nHere is a summary of your requirement:\n\n━━━━━━━━━━━━━━━━━\n🔧 *Service:* ${session.selected_service}\n📐 *Area Required:* ${session.area_required}\n📍 *Site Location:* ${session.site_location}\n📅 *Timeline:* ${session.project_timeline}\n💰 *Budget:* ${session.budget_range}\n━━━━━━━━━━━━━━━━━\n\n✅ Your information has been updated to our project team.\n\n📞 You will receive a *personal call back within 2 hours* from our team.\n\nThank you for choosing *Deepika Builtech Engineering!* 🏗️\n\n_📞 +91 96000 67611_\n_🌐 deepikabuiltech.com_`;
+    
+    await sendMetaChatMessage(senderId, recipientId, platform, summary);
+    return;
+  }
+
+  // --- MAIN MENU FLOW ---
+  const isWelcome = msgLower.includes("hi") || msgLower.includes("hello") || msgLower.includes("hey") || msgLower.includes("start") || msgLower.includes("vanakkam") || msgLower === "btn_menu";
+
+  if (isWelcome) {
+    await sendMetaChatMessage(senderId, recipientId, platform, `🏗️ *Welcome to Deepika Builtech Engineering!*\n\nTamil Nadu's most trusted Pre-Engineered Building specialists — based in Chennai.\n\n🏆 Excellence Award 2025\n✅ 10+ Years of Experience\n✅ 150+ Projects Delivered\n✅ 3 Manufacturing Units in Tamil Nadu\n\nPlease select an option:\n\n1️⃣ About Us\n2️⃣ Our Services\n3️⃣ Get a Free Quote\n4️⃣ Contact & Locations\n5️⃣ 💬 Talk to Human`, [
+      { id: "btn_about", title: "1 - About Us" },
+      { id: "btn_services", title: "2 - Services" },
+      { id: "btn_quote", title: "3 - Free Quote" }
+    ]);
+    return;
+  }
+
+  if (msgLower === "btn_about" || msgLower === "1" || msgLower.includes("about")) {
+    await sendMetaChatMessage(senderId, recipientId, platform, `🏢 *About Deepika Builtech Engineering*\n\nWe are a leading Pre-Engineered Building (PEB) construction company headquartered in Ambattur, Chennai — with 10+ years of trusted service across Tamil Nadu.\n\n🏭 *What We Build:*\nWe design, fabricate and erect high-quality PEB structures, warehouses, cold storages, mezzanine floors, industrial sheds and godowns.\n\n📍 *Our 3 Locations:*\n- Head Office — Ambattur, Chennai\n- Unit I — Kanchipuram District\n- Unit II — Thirumullaivoyal, Thiruvallur\n\n🏆 *Why Clients Choose Us:*\n✅ In-house manufacturing\n✅ On-time delivery\n✅ Transparent pricing\n\nWhat would you like to do next?`, [
+      { id: "btn_services", title: "2 - View Services" },
+      { id: "btn_quote", title: "3 - Free Quote" },
+      { id: "btn_menu", title: "Main Menu" }
+    ]);
+    return;
+  }
+
+  if (msgLower === "btn_services" || msgLower === "2" || msgLower.includes("service")) {
+    await sendMetaChatMessage(senderId, recipientId, platform, `🔧 *Our Construction Services*\n\n1️⃣ PEB Structure (Pre-Engineered Buildings)\n2️⃣ Mezzanine Floor (Space Expansion)\n3️⃣ Cold Storage (Insulated Facilities)\n4️⃣ Industrial Shed Fabrication\n5️⃣ Godown Construction\n6️⃣ Civil Foundation & RC Works\n\nSelect *Free Quote* to get an instant estimate for any service!`, [
+      { id: "btn_quote", title: "3 - Free Quote" },
+      { id: "btn_menu", title: "Main Menu" }
+    ]);
+    return;
+  }
+
+  if (msgLower === "4" || msgLower.includes("contact") || msgLower.includes("location") || msgLower.includes("address")) {
+    await sendMetaChatMessage(senderId, recipientId, platform, `📞 *Contact Deepika Builtech Engineering*\n\n📱 *Call / WhatsApp:* +91 96000 67611 / +91 98844 87938\n📧 *Email:* dbtechengg@gmail.com\n🌐 *Website:* deepikabuiltech.com\n\n📍 *Head Office:* SIDCO Industrial Estate, Ambattur, Chennai — 600098\n\n🕐 *Working Hours:* Monday – Saturday: 9 AM – 6 PM`, [
+      { id: "btn_quote", title: "3 - Free Quote" },
+      { id: "btn_menu", title: "Main Menu" }
+    ]);
+    return;
+  }
+
+  if (msgLower === "btn_quote" || msgLower === "3" || msgLower.includes("quote")) {
+    session.quote_step = 1;
+    await sendMetaChatMessage(senderId, recipientId, platform, `📋 *Let's get your FREE project estimate!*\n\nThis will take less than 2 minutes. 🕐\n\n━━━━━━━━━━━━━━━━━\n❓ *Question 1 of 4*\n\n*What is the total area you need for your project?*\n\n_Please type your answer_\n_(Example: 5,000 sq ft · 10,000 sq ft · 1 acre)_`);
+    return;
+  }
+
+  // Fallback
+  await sendMetaChatMessage(senderId, recipientId, platform, `😊 *Thank you for your message!*\n\nPlease choose an option below:\n\n1️⃣ About Us\n2️⃣ Our Services\n3️⃣ Get a Free Quote\n4️⃣ Contact & Locations\n5️⃣ 💬 Talk to Human`, [
+    { id: "btn_menu", title: "Main Menu" },
+    { id: "btn_quote", title: "3 - Free Quote" },
+    { id: "btn_human", title: "5 - Talk to Human" }
+  ]);
 }
 
 export default async function handler(req, res) {
@@ -220,48 +405,12 @@ export default async function handler(req, res) {
             const senderId = messaging.sender?.id;
             const recipientId = messaging.recipient?.id;
             const messageText = messaging.message.text || messaging.message.quick_reply?.payload || '';
-            const messageTextLower = messageText.toLowerCase();
             const platform = body.object === 'page' ? 'facebook' : 'instagram';
-            const phoneIdentifier = platform === 'facebook' ? `fb:${senderId}` : `ig:${senderId}`;
+            
+            const customerName = await getMetaUserProfile(senderId, platform) || (platform === 'facebook' ? 'Facebook Customer' : 'Instagram Customer');
 
-            // Check Duplicates
-            const { data: existingLeads } = await supabase.from('leads').select('id').eq('phone', phoneIdentifier);
-            const { data: existingContacts } = await supabase.from('contacts').select('id').eq('phone', phoneIdentifier);
-            const isExisting = (existingLeads?.length > 0) || (existingContacts?.length > 0);
-
-            if (!isExisting) {
-              const keywords = ['hi', 'hello', 'interested', 'price', 'cost', 'quote', 'details', 'buy', 'service', 'help', 'inquiry'];
-              const isLeadIntent = keywords.some(kw => messageTextLower.includes(kw)) || messageText === '';
-
-              if (isLeadIntent) {
-                const customerName = await getMetaUserProfile(senderId, platform) || (platform === 'facebook' ? 'Facebook Customer' : 'Instagram Customer');
-                
-                const { error } = await supabase.from('leads').insert([{
-                  contactName:  customerName,
-                  phone:        phoneIdentifier,
-                  source:       platform === 'facebook' ? 'Facebook Messenger' : 'Instagram DM',
-                  status:       'New',
-                  notes:        `Inquiry: ${messageText || 'Media/Attachment'}`
-                }]);
-
-                if (error) {
-                  console.error(`[${platform.toUpperCase()} Webhook DB Error]:`, error.message);
-                } else {
-                  console.log(`[${platform.toUpperCase()} Lead Captured] Added ${customerName} to CRM.`);
-                }
-              }
-            }
-
-            // Send direct auto-reply back to Facebook Messenger / Instagram DM
-            await sendMetaAutoReply(senderId, recipientId, platform, messageText);
-
-            // Also forward the webhook event to external bot server if configured
-            const botServerUrl = process.env.BOT_SERVER_URL;
-            if (botServerUrl) {
-              axios.post(`${botServerUrl}/webhook`, body).catch(err => {
-                console.error(`[${platform.toUpperCase()} Webhook Forward Error]:`, err.message);
-              });
-            }
+            // Trigger full interactive chatbot (state machine)
+            await handleMetaChatbot(senderId, recipientId, platform, messageText, customerName);
           }
         }
       }
