@@ -1,37 +1,72 @@
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
 import { supabase } from './services/supabase';
 import Layout from './components/Layout/Layout';
 
-// Direct synchronous imports for public Auth pages to guarantee 0ms instant loading
+// Direct synchronous imports for 0ms instant loading & zero chunk load errors
 import Login from './modules/Auth/Login';
 import Register from './modules/Auth/Register';
+import Dashboard from './modules/Dashboard/Dashboard';
+import Leads from './modules/Leads/Leads';
+import Contacts from './modules/Contacts/Contacts';
+import Companies from './modules/Companies/Companies';
+import Pipeline from './modules/Pipeline/Pipeline';
+import Projects from './modules/Projects/Projects';
+import Quotations from './modules/Quotations/Quotations';
+import Tasks from './modules/Tasks/Tasks';
+import FollowUps from './modules/FollowUps/FollowUps';
+import Reports from './modules/Reports/Reports';
+import Settings from './modules/Settings/Settings';
+import Vendors from './modules/Vendors/Vendors';
+import SiteVisits from './modules/SiteVisits/SiteVisits';
+import Enquiries from './modules/Enquiries/Enquiries';
 
-const FullPageLoader = () => (
-  <div style={{ display: 'flex', height: '100vh', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4f8fd', fontFamily: 'Inter, sans-serif' }}>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ width: '44px', height: '44px', borderRadius: '50%', border: '4px solid #1b50a0', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite', marginBottom: '16px' }}></div>
-      <p style={{ color: '#4a5568', fontWeight: 500 }}>Loading Module...</p>
-    </div>
-  </div>
-);
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
 
-// Code Splitting (Lazy Loading) for heavy protected internal modules only
-const Dashboard = lazy(() => import('./modules/Dashboard/Dashboard'));
-const Leads = lazy(() => import('./modules/Leads/Leads'));
-const Contacts = lazy(() => import('./modules/Contacts/Contacts'));
-const Companies = lazy(() => import('./modules/Companies/Companies'));
-const Pipeline = lazy(() => import('./modules/Pipeline/Pipeline'));
-const Projects = lazy(() => import('./modules/Projects/Projects'));
-const Quotations = lazy(() => import('./modules/Quotations/Quotations'));
-const Tasks = lazy(() => import('./modules/Tasks/Tasks'));
-const FollowUps = lazy(() => import('./modules/FollowUps/FollowUps'));
-const Reports = lazy(() => import('./modules/Reports/Reports'));
-const Settings = lazy(() => import('./modules/Settings/Settings'));
-const Vendors = lazy(() => import('./modules/Vendors/Vendors'));
-const SiteVisits = lazy(() => import('./modules/SiteVisits/SiteVisits'));
-const Enquiries = lazy(() => import('./modules/Enquiries/Enquiries'));
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public state: ErrorBoundaryState = {
+    hasError: false,
+    error: null,
+  };
+
+  public static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Uncaught App Error:", error, errorInfo);
+  }
+
+  public render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ display: 'flex', height: '100vh', width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4f8fd', fontFamily: 'Inter, sans-serif', padding: '20px' }}>
+          <div style={{ background: '#fff', padding: '32px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', textAlign: 'center', maxWidth: '400px' }}>
+            <h2 style={{ color: '#0d2c5e', marginBottom: '12px' }}>Something went wrong</h2>
+            <p style={{ color: '#718096', marginBottom: '20px', fontSize: '14px' }}>
+              {this.state.error?.message || 'An unexpected error occurred.'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              style={{ background: '#1b50a0', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -46,7 +81,7 @@ const App: React.FC = () => {
   const logout = useAuthStore(state => state.logout);
 
   useEffect(() => {
-    // Check active session on mount asynchronously without blocking initial render
+    // Asynchronously restore session if present without blocking initial page render
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         if (session?.user) {
@@ -61,7 +96,7 @@ const App: React.FC = () => {
         console.error("Failed to restore Supabase session on startup:", error);
       });
 
-    // Listen for auth state changes (sign-in, sign-out, session refresh)
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         login({
@@ -80,10 +115,10 @@ const App: React.FC = () => {
   }, [login, logout]);
 
   return (
-    <Router>
-      <Suspense fallback={<FullPageLoader />}>
+    <ErrorBoundary>
+      <Router>
         <Routes>
-          {/* Public Authentication Routes - Direct & Instant */}
+          {/* Public Authentication Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           
@@ -105,8 +140,8 @@ const App: React.FC = () => {
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Suspense>
-    </Router>
+      </Router>
+    </ErrorBoundary>
   );
 };
 
