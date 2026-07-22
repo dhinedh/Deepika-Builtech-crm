@@ -47,9 +47,44 @@ const App: React.FC = () => {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
+    // Safety fallback: ensure initial loading screen unblocks within 1.5s even if network/DNS hangs
+    const safetyTimer = setTimeout(() => {
+      if (mounted) {
+        setInitializing(false);
+      }
+    }, 1500);
+
     // Check active session on mount
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
+        if (mounted) {
+          if (session?.user) {
+            login({
+              id: session.user.id,
+              email: session.user.email || '',
+              name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
+            });
+          } else {
+            logout();
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to restore Supabase session on startup:", error);
+        if (mounted) logout();
+      })
+      .finally(() => {
+        if (mounted) {
+          clearTimeout(safetyTimer);
+          setInitializing(false);
+        }
+      });
+
+    // Listen for auth state changes (sign-in, sign-out, session refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
         if (session?.user) {
           login({
             id: session.user.id,
@@ -59,29 +94,12 @@ const App: React.FC = () => {
         } else {
           logout();
         }
-      })
-      .catch((error) => {
-        console.error("Failed to restore Supabase session on startup:", error);
-        logout();
-      })
-      .finally(() => {
-        setInitializing(false);
-      });
-
-    // Listen for auth state changes (sign-in, sign-out, session refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        login({
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
-        });
-      } else {
-        logout();
       }
     });
 
     return () => {
+      mounted = false;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, [login, logout]);
