@@ -77,15 +77,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App: React.FC = () => {
-  const login = useAuthStore(state => state.login);
-  const logout = useAuthStore(state => state.logout);
-
   useEffect(() => {
     // Asynchronously restore session if present without blocking initial page render
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         if (session?.user) {
-          login({
+          useAuthStore.getState().login({
             id: session.user.id,
             email: session.user.email || '',
             name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
@@ -96,23 +93,23 @@ const App: React.FC = () => {
         console.error("Failed to restore Supabase session on startup:", error);
       });
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Listen for auth state changes (sign-in, sign-out, session refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
-        login({
+        useAuthStore.getState().login({
           id: session.user.id,
           email: session.user.email || '',
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
         });
-      } else {
-        logout();
+      } else if (event === 'SIGNED_OUT') {
+        useAuthStore.getState().logout();
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [login, logout]);
+  }, []);
 
   return (
     <ErrorBoundary>
