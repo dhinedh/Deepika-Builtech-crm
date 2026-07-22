@@ -84,6 +84,54 @@ async function getMetaUserProfile(senderId, platform) {
   return null;
 }
 
+/**
+ * Helper to send interactive auto-reply on Facebook Messenger or Instagram DM directly from CRM backend
+ */
+async function sendMetaAutoReply(senderId, platform, messageText) {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN;
+  if (!token) {
+    console.warn('⚠️ Missing Meta Access Token for auto-reply');
+    return;
+  }
+
+  const msgLower = (messageText || '').toLowerCase().trim();
+
+  let replyText = `🏗️ Welcome to Deepika Builtech Engineering!\n\nTamil Nadu's most trusted Pre-Engineered Building (PEB) specialists — based in Chennai.\n\n🏆 Excellence Award 2025\n✅ 10+ Years of Experience\n✅ 150+ Projects Delivered\n✅ 3 Manufacturing Units\n\nHow can we help you today?\n1️⃣ About Us\n2️⃣ Our Services\n3️⃣ Get a Free Quote\n4️⃣ Contact & Locations\n\n📞 Call/WhatsApp: +91 96000 67611\n🌐 deepikabuiltech.com`;
+
+  const quickReplies = [
+    { content_type: 'text', title: '1 - About Us', payload: 'btn_about' },
+    { content_type: 'text', title: '2 - Services', payload: 'btn_services' },
+    { content_type: 'text', title: '3 - Free Quote', payload: 'btn_quote' }
+  ];
+
+  if (msgLower === '1' || msgLower.includes('about') || msgLower === 'btn_about') {
+    replyText = `🏢 About Deepika Builtech Engineering\n\nWe design, fabricate and erect high-quality PEB structures, warehouses, cold storages, mezzanine floors & industrial sheds across Tamil Nadu.\n\n📍 Locations: Chennai, Kanchipuram, Thiruvallur\n\n📞 Call/WhatsApp: +91 96000 67611`;
+  } else if (msgLower === '2' || msgLower.includes('service') || msgLower === 'btn_services') {
+    replyText = `🔧 Our Services:\n\n1. PEB Structures (Factories & Warehouses)\n2. Mezzanine Floors (Space Expansion)\n3. Cold Storage Facilities\n4. Industrial Shed Fabrication\n5. Godown Construction\n6. Civil Foundation Works\n\n📞 Call: +91 96000 67611`;
+  } else if (msgLower === '3' || msgLower.includes('quote') || msgLower === 'btn_quote') {
+    replyText = `📋 Get a Free Quote!\n\nPlease share:\n1. Required Area (sq ft)\n2. Site Location\n3. Start Timeline\n\nOur team will prepare a detailed quotation for you within 2 hours!\n\n📞 Or call us directly: +91 96000 67611`;
+  }
+
+  try {
+    await axios({
+      method: 'POST',
+      url: `https://graph.facebook.com/v18.0/me/messages`,
+      params: { access_token: token },
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        recipient: { id: senderId },
+        message: {
+          text: replyText,
+          quick_replies: quickReplies
+        }
+      }
+    });
+    console.log(`✅ [${platform.toUpperCase()} Auto-Reply Sent] to senderId ${senderId}`);
+  } catch (err) {
+    console.error(`❌ [${platform.toUpperCase()} Auto-Reply Error]:`, err.response?.data || err.message);
+  }
+}
+
 export default async function handler(req, res) {
   // ✅ Handle GET (Verification)
   if (req.method === 'GET') {
@@ -148,7 +196,7 @@ export default async function handler(req, res) {
           const messaging = entry.messaging[0];
           if (messaging && messaging.message) {
             const senderId = messaging.sender?.id;
-            const messageText = messaging.message.text || '';
+            const messageText = messaging.message.text || messaging.message.quick_reply?.payload || '';
             const messageTextLower = messageText.toLowerCase();
             const platform = body.object === 'page' ? 'facebook' : 'instagram';
             const phoneIdentifier = platform === 'facebook' ? `fb:${senderId}` : `ig:${senderId}`;
@@ -181,7 +229,10 @@ export default async function handler(req, res) {
               }
             }
 
-            // Forward the webhook event to the chatbot server to handle the interactive replies
+            // Send direct auto-reply back to Facebook Messenger / Instagram DM
+            await sendMetaAutoReply(senderId, platform, messageText);
+
+            // Also forward the webhook event to external bot server if configured
             const botServerUrl = process.env.BOT_SERVER_URL;
             if (botServerUrl) {
               axios.post(`${botServerUrl}/webhook`, body).catch(err => {
