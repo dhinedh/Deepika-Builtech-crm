@@ -180,6 +180,14 @@ export default async function handler(req, res) {
                 }
               }
             }
+
+            // Forward the webhook event to the chatbot server to handle the interactive replies
+            const botServerUrl = process.env.BOT_SERVER_URL;
+            if (botServerUrl) {
+              axios.post(`${botServerUrl}/webhook`, body).catch(err => {
+                console.error(`[${platform.toUpperCase()} Webhook Forward Error]:`, err.message);
+              });
+            }
           }
         }
       }
