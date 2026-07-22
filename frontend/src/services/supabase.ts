@@ -49,8 +49,14 @@ const notifyListeners = (event: string, session: any) => {
   });
 };
 
+const isPlaceholderUrl = !supabaseUrl || supabaseUrl.includes('lwacdwackjnifrjgkrom') || supabaseUrl.includes('YOUR_REAL_PROJECT_ID');
+
 const authProxy = {
   getSession: async () => {
+    if (isPlaceholderUrl) {
+      const mockSession = getLocalMockSession();
+      return { data: { session: mockSession }, error: null };
+    }
     try {
       const res = await realClient.auth.getSession();
       if (res.data?.session) {
@@ -64,6 +70,27 @@ const authProxy = {
   },
 
   signInWithPassword: async (credentials: any) => {
+    if (isPlaceholderUrl) {
+      console.info('[Supabase Auth] Mock auth mode active. Signing in with mock credentials.');
+      const email = credentials.email || 'admin@example.com';
+      const mockSession = {
+        access_token: 'mock-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+        refresh_token: 'mock-refresh-token',
+        user: {
+          id: 'mock-user-id',
+          email: email,
+          user_metadata: { full_name: email.split('@')[0] },
+          aud: 'authenticated',
+          role: 'authenticated',
+          created_at: new Date().toISOString()
+        }
+      };
+      setLocalMockSession(mockSession);
+      notifyListeners('SIGNED_IN', mockSession);
+      return { data: { user: mockSession.user, session: mockSession }, error: null };
+    }
     try {
       const res = await realClient.auth.signInWithPassword(credentials);
       if (res.error) {
@@ -97,6 +124,27 @@ const authProxy = {
   },
 
   signUp: async (credentials: any) => {
+    if (isPlaceholderUrl) {
+      console.info('[Supabase Auth] Mock auth mode active. Registering mock user.');
+      const email = credentials.email || 'admin@example.com';
+      const mockSession = {
+        access_token: 'mock-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+        refresh_token: 'mock-refresh-token',
+        user: {
+          id: 'mock-user-id',
+          email: email,
+          user_metadata: { full_name: credentials.options?.data?.full_name || email.split('@')[0] },
+          aud: 'authenticated',
+          role: 'authenticated',
+          created_at: new Date().toISOString()
+        }
+      };
+      setLocalMockSession(mockSession);
+      notifyListeners('SIGNED_IN', mockSession);
+      return { data: { user: mockSession.user, session: mockSession }, error: null };
+    }
     try {
       const res = await realClient.auth.signUp(credentials);
       if (res.error) {
