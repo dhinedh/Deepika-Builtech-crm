@@ -249,8 +249,21 @@ router.post('/whatsapp-bot-lead', async (req, res) => {
     }
 
     // Clean and format phone number
-    const formattedPhone = WhatsAppNumber.replace(/\D/g, '');
-    const finalPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
+    let finalPhone = WhatsAppNumber;
+    if (!WhatsAppNumber.startsWith('fb:') && !WhatsAppNumber.startsWith('ig:')) {
+      const formattedPhone = WhatsAppNumber.replace(/\D/g, '');
+      finalPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
+    }
+
+    let defaultName = 'WhatsApp Customer';
+    let leadSource = 'WhatsApp Bot';
+    if (WhatsAppNumber.startsWith('fb:')) {
+      defaultName = 'Facebook Customer';
+      leadSource = 'Facebook Messenger';
+    } else if (WhatsAppNumber.startsWith('ig:')) {
+      defaultName = 'Instagram Customer';
+      leadSource = 'Instagram DM';
+    }
 
     // Check if this lead already exists in CRM
     const { data: existingLeads } = await supabase
@@ -262,14 +275,14 @@ router.post('/whatsapp-bot-lead', async (req, res) => {
       console.log(`[WhatsApp Bot Webhook] Lead with phone ${finalPhone} already exists. Updating details.`);
       
       const updateData = {
-        contactName: CustomerName || 'WhatsApp Customer',
+        contactName: CustomerName || defaultName,
         projectType: ServiceSelected || 'PEB / General Enquiry',
         location: SiteLocation || '',
         landArea: AreaRequired || '',
         timeline: Timeline || '',
         leadScore: LeadScore || 20,
         status: LeadStatus || 'New',
-        notes: `Updated from WhatsApp Bot Flow.\nBudget: ${BudgetRange || 'Not confirmed'}`,
+        notes: `Updated from Bot Flow.\nBudget: ${BudgetRange || 'Not confirmed'}`,
         updated_at: new Date().toISOString()
       };
 
@@ -284,16 +297,16 @@ router.post('/whatsapp-bot-lead', async (req, res) => {
     }
 
     const newLead = {
-      contactName: CustomerName || 'WhatsApp Customer',
+      contactName: CustomerName || defaultName,
       phone: finalPhone,
       projectType: ServiceSelected || 'PEB / General Enquiry',
       location: SiteLocation || '',
       landArea: AreaRequired || '',
       timeline: Timeline || '',
-      source: 'WhatsApp Bot',
+      source: leadSource,
       status: LeadStatus || 'New',
       leadScore: LeadScore || 20,
-      notes: `Captured from WhatsApp Bot Flow.\nBudget: ${BudgetRange || 'Not confirmed'}`
+      notes: `Captured from Bot Flow.\nBudget: ${BudgetRange || 'Not confirmed'}`
     };
 
     const { error } = await supabase
@@ -323,8 +336,18 @@ router.post('/whatsapp-bot-enquiry', async (req, res) => {
     }
 
     // Clean and format phone number
-    const formattedPhone = WhatsAppNumber.replace(/\D/g, '');
-    const finalPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
+    let finalPhone = WhatsAppNumber;
+    if (!WhatsAppNumber.startsWith('fb:') && !WhatsAppNumber.startsWith('ig:')) {
+      const formattedPhone = WhatsAppNumber.replace(/\D/g, '');
+      finalPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
+    }
+
+    let defaultName = 'WhatsApp Customer';
+    if (WhatsAppNumber.startsWith('fb:')) {
+      defaultName = 'Facebook Customer';
+    } else if (WhatsAppNumber.startsWith('ig:')) {
+      defaultName = 'Instagram Customer';
+    }
 
     // Check if this enquiry already exists in CRM enquiries table to avoid duplication
     const { data: existingEnquiries } = await supabase
@@ -336,7 +359,7 @@ router.post('/whatsapp-bot-enquiry', async (req, res) => {
       console.log(`[WhatsApp Bot Enquiry] Enquiry with phone ${finalPhone} already exists. Updating last message.`);
       
       const updateData = {
-        contactName: CustomerName || 'WhatsApp Customer',
+        contactName: CustomerName || defaultName,
         lastMessage: MessageText || '',
         updated_at: new Date().toISOString()
       };
