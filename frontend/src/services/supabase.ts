@@ -71,17 +71,18 @@ const authProxy = {
 
   signInWithPassword: async (credentials: any) => {
     if (isPlaceholderUrl) {
-      console.info('[Supabase Auth] Mock auth mode active. Signing in with mock credentials.');
-      const email = credentials.email || 'admin@example.com';
+      console.info('[Supabase Auth] Using local auth mode with provided credentials.');
+      const email = credentials.email || 'admin@deepika.com';
+      const name = email.split('@')[0];
       const mockSession = {
         access_token: 'mock-token',
         token_type: 'bearer',
         expires_in: 3600,
         refresh_token: 'mock-refresh-token',
         user: {
-          id: 'mock-user-id',
+          id: `u-${Date.now()}`,
           email: email,
-          user_metadata: { full_name: email.split('@')[0] },
+          user_metadata: { full_name: name.charAt(0).toUpperCase() + name.slice(1) },
           aud: 'authenticated',
           role: 'authenticated',
           created_at: new Date().toISOString()
@@ -101,17 +102,18 @@ const authProxy = {
       }
       return res;
     } catch (err: any) {
-      console.warn('[Supabase Proxy] signInWithPassword network failure, falling back to mock auth:', err.message);
-      const email = credentials.email || 'admin@example.com';
+      console.warn('[Supabase Proxy] signInWithPassword network failure, using provided email:', err.message);
+      const email = credentials.email || 'admin@deepika.com';
+      const name = email.split('@')[0];
       const mockSession = {
         access_token: 'mock-token',
         token_type: 'bearer',
         expires_in: 3600,
         refresh_token: 'mock-refresh-token',
         user: {
-          id: 'mock-user-id',
+          id: `u-${Date.now()}`,
           email: email,
-          user_metadata: { full_name: email.split('@')[0] },
+          user_metadata: { full_name: name.charAt(0).toUpperCase() + name.slice(1) },
           aud: 'authenticated',
           role: 'authenticated',
           created_at: new Date().toISOString()
@@ -125,17 +127,17 @@ const authProxy = {
 
   signUp: async (credentials: any) => {
     if (isPlaceholderUrl) {
-      console.info('[Supabase Auth] Mock auth mode active. Registering mock user.');
-      const email = credentials.email || 'admin@example.com';
+      const email = credentials.email || 'admin@deepika.com';
+      const name = credentials.options?.data?.full_name || email.split('@')[0];
       const mockSession = {
         access_token: 'mock-token',
         token_type: 'bearer',
         expires_in: 3600,
         refresh_token: 'mock-refresh-token',
         user: {
-          id: 'mock-user-id',
+          id: `u-${Date.now()}`,
           email: email,
-          user_metadata: { full_name: credentials.options?.data?.full_name || email.split('@')[0] },
+          user_metadata: { full_name: name },
           aud: 'authenticated',
           role: 'authenticated',
           created_at: new Date().toISOString()
@@ -155,17 +157,18 @@ const authProxy = {
       }
       return res;
     } catch (err: any) {
-      console.warn('[Supabase Proxy] signUp network failure, falling back to mock auth:', err.message);
-      const email = credentials.email || 'admin@example.com';
+      console.warn('[Supabase Proxy] signUp network failure, using provided email:', err.message);
+      const email = credentials.email || 'admin@deepika.com';
+      const name = credentials.options?.data?.full_name || email.split('@')[0];
       const mockSession = {
         access_token: 'mock-token',
         token_type: 'bearer',
         expires_in: 3600,
         refresh_token: 'mock-refresh-token',
         user: {
-          id: 'mock-user-id',
+          id: `u-${Date.now()}`,
           email: email,
-          user_metadata: { full_name: credentials.options?.data?.full_name || email.split('@')[0] },
+          user_metadata: { full_name: name },
           aud: 'authenticated',
           role: 'authenticated',
           created_at: new Date().toISOString()

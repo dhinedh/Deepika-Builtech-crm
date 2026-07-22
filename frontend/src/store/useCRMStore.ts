@@ -5,7 +5,7 @@ import type {
   Lead, Contact, Company, Project, Deal, Task, FollowUp, Quotation,
   CommunicationLog, SiteVisit, Vendor, PurchaseOrder, User, Enquiry
 } from '../types';
-import { sampleLeads, sampleProjects, sampleUsers, sampleContacts, sampleCompanies, sampleFollowUps } from './sampleData';
+import { sampleLeads, sampleEnquiries, sampleProjects, sampleUsers, sampleContacts, sampleCompanies, sampleFollowUps } from './sampleData';
 
 interface CRMState {
   leads: Lead[];
@@ -69,9 +69,9 @@ interface CRMState {
 export const useCRMStore = create<CRMState>()(
   persist(
     (set) => ({
-      leads: [],
-      enquiries: [],
-      contacts: [],
+      leads: sampleLeads,
+      enquiries: sampleEnquiries,
+      contacts: sampleContacts,
       companies: [],
       projects: [],
       deals: [],

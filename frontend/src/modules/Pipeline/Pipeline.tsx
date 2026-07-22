@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   DndContext, 
   DragOverlay, 
@@ -14,10 +14,7 @@ import type {
   DragOverEvent
 } from '@dnd-kit/core';
 import { 
-  arrayMove, 
-  SortableContext, 
-  sortableKeyboardCoordinates, 
-  verticalListSortingStrategy 
+  sortableKeyboardCoordinates
 } from '@dnd-kit/sortable';
 import { useCRMStore } from '../../store/useCRMStore';
 import { KanbanColumn } from './KanbanColumn.tsx';
@@ -36,26 +33,29 @@ const STAGES: DealStage[] = [
 ];
 
 const Pipeline: React.FC = () => {
-  const { leads, projects } = useCRMStore();
+  const { leads } = useCRMStore();
   
-  // Mock deals from leads for visualization
-  const [deals, setDeals] = useState<Deal[]>(
-    leads.map((lead, idx) => ({
-      id: `d-${idx}`,
-      name: `${lead.companyName} - ${lead.projectType}`,
-      leadId: lead.id,
-      contactId: 'con1',
-      companyId: 'c1',
-      value: lead.estimatedBudget || 0,
-      projectType: lead.projectType,
-      expectedCloseDate: new Date().toISOString(),
-      probability: 50,
-      stage: lead.status as any, // Simple mapping for demo
-      assignedTo: 'u3',
-      daysInStage: 2,
-      createdAt: lead.createdAt
-    }))
-  );
+  const [deals, setDeals] = useState<Deal[]>([]);
+
+  useEffect(() => {
+    setDeals(
+      leads.map((lead, idx) => ({
+        id: `d-${idx}`,
+        name: `${lead.companyName || lead.contactName} - ${lead.projectType}`,
+        leadId: lead.id,
+        contactId: '',
+        companyId: '',
+        value: lead.estimatedBudget || 0,
+        projectType: lead.projectType,
+        expectedCloseDate: new Date().toISOString(),
+        probability: 50,
+        stage: (STAGES.includes(lead.status as any) ? lead.status : 'New Enquiry') as DealStage,
+        assignedTo: 'u3',
+        daysInStage: 1,
+        createdAt: lead.createdAt
+      }))
+    );
+  }, [leads]);
 
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -65,6 +65,9 @@ const Pipeline: React.FC = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const totalPipeline = deals.reduce((sum, d) => sum + (d.value || 0), 0);
+  const weightedForecast = deals.reduce((sum, d) => sum + ((d.value || 0) * (d.probability || 50) / 100), 0);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -80,7 +83,6 @@ const Pipeline: React.FC = () => {
     const activeDeal = deals.find(d => d.id === activeId);
     if (!activeDeal) return;
 
-    // Check if dragging over a column
     if (STAGES.includes(overId as DealStage)) {
       if (activeDeal.stage !== overId) {
         setDeals(prev => prev.map(d => 
@@ -90,7 +92,7 @@ const Pipeline: React.FC = () => {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = (_event: DragEndEvent) => {
     setActiveId(null);
   };
 
@@ -100,12 +102,12 @@ const Pipeline: React.FC = () => {
         <div className="pipeline-stats">
           <div className="stat-item">
             <span className="label">Total Pipeline</span>
-            <h3>₹ 245 L</h3>
+            <h3>₹ {totalPipeline} L</h3>
           </div>
           <div className="stat-divider"></div>
           <div className="stat-item">
             <span className="label">Weighted Forecast</span>
-            <h3>₹ 128 L</h3>
+            <h3>₹ {Math.round(weightedForecast)} L</h3>
           </div>
         </div>
       </div>

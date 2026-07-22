@@ -13,29 +13,10 @@ import { useNavigate } from 'react-router-dom';
 import { WhatsAppAssistant } from './WhatsAppAssistant.tsx';
 import './Dashboard.css';
 
-const pipelineData = [
-  { stage: 'Enquiry', count: 12 },
-  { stage: 'Contacted', count: 8 },
-  { stage: 'Qualified', count: 6 },
-  { stage: 'Site Visit', count: 4 },
-  { stage: 'Quotation', count: 5 },
-  { stage: 'Negotiation', count: 3 },
-  { stage: 'Won', count: 2 },
-];
-
-const sourceData = [
-  { name: 'Website', value: 35 },
-  { name: 'WhatsApp', value: 25 },
-  { name: 'Instagram', value: 15 },
-  { name: 'Phone', value: 10 },
-  { name: 'Referral', value: 10 },
-  { name: 'Other', value: 5 },
-];
-
 const COLORS = ['#0D2C5E', '#1B50A0', '#E8622A', '#1D9E75', '#BA7517', '#718096'];
 
 const Dashboard: React.FC = () => {
-  const { leads, projects, followUps, fetchLeads, fetchFollowUps } = useCRMStore();
+  const { leads, projects, followUps, enquiries, fetchLeads, fetchFollowUps, fetchEnquiries } = useCRMStore();
   const navigate = useNavigate();
   
   const todayFollowUps = followUps.filter(f => f.status === 'Pending' || f.status === 'Overdue');
@@ -47,12 +28,35 @@ const Dashboard: React.FC = () => {
     fetch('/api/status')
       .then(res => res.json())
       .then(data => setBackendStatus(data.message))
-      .catch(err => setBackendStatus('Backend disconnected'));
+      .catch(() => setBackendStatus('Backend disconnected'));
 
     // Synchronize live data on mount
     fetchLeads();
     fetchFollowUps();
+    if (fetchEnquiries) fetchEnquiries();
   }, []);
+
+  const totalLeadsCount = leads.length;
+  const totalPipelineValue = leads.reduce((sum, l) => sum + (Number(l.estimatedBudget) || 0), 0);
+
+  const pipelineStages = ['Enquiry', 'Contacted', 'Qualified', 'Site Visit', 'Quotation', 'Negotiation', 'Won'];
+  const pipelineData = pipelineStages.map(stage => {
+    if (stage === 'Enquiry') {
+      const enquiryLeadCount = leads.filter(l => (l.status as string) === 'New' || (l.status as string) === 'Enquiry').length;
+      return { stage, count: (enquiries?.length || 0) + enquiryLeadCount };
+    }
+    return { stage, count: leads.filter(l => (l.status as string) === stage).length };
+  });
+
+  const sourceCounts: Record<string, number> = {};
+  leads.forEach(l => {
+    const src = l.source || 'Other';
+    sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+  });
+
+  const sourceData = Object.keys(sourceCounts).length > 0 
+    ? Object.entries(sourceCounts).map(([name, value]) => ({ name, value }))
+    : [{ name: 'No Data', value: 0 }];
 
   return (
     <div className="dashboard">
@@ -68,10 +72,7 @@ const Dashboard: React.FC = () => {
           <div className="stat-content">
             <p className="label">Total Leads (Month)</p>
             <div className="stat-value-group">
-              <h3>24</h3>
-              <span className="trend positive">
-                <ArrowUpRight size={14} /> 12%
-              </span>
+              <h3>{totalLeadsCount}</h3>
             </div>
           </div>
         </div>
@@ -81,10 +82,7 @@ const Dashboard: React.FC = () => {
           <div className="stat-content">
             <p className="label">Pipeline Value</p>
             <div className="stat-value-group">
-              <h3>₹ 185 L</h3>
-              <span className="trend positive">
-                <ArrowUpRight size={14} /> 8.4%
-              </span>
+              <h3>₹ {totalPipelineValue} L</h3>
             </div>
           </div>
         </div>
@@ -95,7 +93,6 @@ const Dashboard: React.FC = () => {
             <p className="label">Active Projects</p>
             <div className="stat-value-group">
               <h3>{projects.length}</h3>
-              <span className="trend neutral">0%</span>
             </div>
           </div>
         </div>
@@ -124,7 +121,7 @@ const Dashboard: React.FC = () => {
               <BarChart data={pipelineData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="stage" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                 <Tooltip 
                   cursor={{fill: 'rgba(0,0,0,0.05)'}}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
@@ -188,23 +185,31 @@ const Dashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {leads.slice(0, 5).map(lead => (
-                  <tr key={lead.id}>
-                    <td>
-                      <div className="flex flex-col">
-                        <span className="font-600">{lead.contactName}</span>
-                        <span className="muted-text" style={{fontSize: '11px'}}>{lead.companyName}</span>
-                      </div>
-                    </td>
-                    <td><span className="badge badge-info">{lead.projectType}</span></td>
-                    <td><span className={`badge badge-${lead.status === 'Won' ? 'success' : 'info'}`}>{lead.status}</span></td>
-                    <td>
-                      <span className={`font-600 ${lead.leadScore >= 70 ? 'success-text' : lead.leadScore >= 40 ? 'warning-text' : 'danger-text'}`}>
-                        {lead.leadScore}
-                      </span>
+                {leads.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: 'center', padding: '24px', color: '#718096' }}>
+                      No leads found. New leads captured from WhatsApp, Instagram, or Facebook will appear here.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  leads.slice(0, 5).map(lead => (
+                    <tr key={lead.id}>
+                      <td>
+                        <div className="flex flex-col">
+                          <span className="font-600">{lead.contactName}</span>
+                          <span className="muted-text" style={{fontSize: '11px'}}>{lead.companyName}</span>
+                        </div>
+                      </td>
+                      <td><span className="badge badge-info">{lead.projectType}</span></td>
+                      <td><span className={`badge badge-${lead.status === 'Won' ? 'success' : 'info'}`}>{lead.status}</span></td>
+                      <td>
+                        <span className={`font-600 ${lead.leadScore >= 70 ? 'success-text' : lead.leadScore >= 40 ? 'warning-text' : 'danger-text'}`}>
+                          {lead.leadScore}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -216,24 +221,30 @@ const Dashboard: React.FC = () => {
             <span className="badge badge-danger">{todayFollowUps.length}</span>
           </div>
           <div className="follow-up-list">
-            {todayFollowUps.map(f => {
-              const contact = useCRMStore.getState().contacts.find(c => c.id === f.contactId);
-              return (
-                <div key={f.id} className={`follow-up-item ${f.status.toLowerCase()}`}>
-                  <div className="follow-up-info">
-                    <p className="font-600">{contact?.fullName || 'Unknown'}</p>
-                    <p className="muted-text" style={{fontSize: '12px'}}>{f.type} • {format(new Date(f.scheduledDate), 'hh:mm a')}</p>
+            {todayFollowUps.length === 0 ? (
+              <p style={{ textAlign: 'center', padding: '24px', color: '#718096', fontSize: '14px' }}>
+                No follow-ups scheduled for today.
+              </p>
+            ) : (
+              todayFollowUps.map(f => {
+                const contact = useCRMStore.getState().contacts.find(c => c.id === f.contactId);
+                return (
+                  <div key={f.id} className={`follow-up-item ${f.status.toLowerCase()}`}>
+                    <div className="follow-up-info">
+                      <p className="font-600">{contact?.fullName || 'Unknown'}</p>
+                      <p className="muted-text" style={{fontSize: '12px'}}>{f.type} • {format(new Date(f.scheduledDate), 'hh:mm a')}</p>
+                    </div>
+                    <button 
+                      className="btn btn-primary" 
+                      style={{padding: '4px 10px', fontSize: '11px'}}
+                      onClick={() => navigate('/follow-ups')}
+                    >
+                      View Details
+                    </button>
                   </div>
-                  <button 
-                    className="btn btn-primary" 
-                    style={{padding: '4px 10px', fontSize: '11px'}}
-                    onClick={() => navigate('/follow-ups')}
-                  >
-                    View Details
-                  </button>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -242,38 +253,44 @@ const Dashboard: React.FC = () => {
       <div className="projects-section">
         <h3 style={{marginBottom: '16px'}}>Active Projects Progress</h3>
         <div className="projects-grid">
-          {projects.map(project => (
-            <div key={project.id} className="card project-progress-card">
-              <div className="project-header">
-                <div>
-                  <h4>{project.name}</h4>
-                  <p className="muted-text" style={{fontSize: '12px'}}>{project.projectType}</p>
-                </div>
-                <span className="badge badge-info">In Progress</span>
-              </div>
-              
-              <div className="progress-section">
-                <div className="progress-info">
-                  <span className="label">Progress</span>
-                  <span className="font-600">{project.percentComplete}%</span>
-                </div>
-                <div className="progress-bar-bg">
-                  <div className="progress-bar-fill" style={{width: `${project.percentComplete}%`}}></div>
-                </div>
-              </div>
-              
-              <div className="project-footer">
-                <div className="footer-item">
-                  <p className="label">Value</p>
-                  <p className="font-600">₹ {project.contractValue} L</p>
-                </div>
-                <div className="footer-item">
-                  <p className="label">Target Date</p>
-                  <p className="font-600">{format(new Date(project.targetEndDate), 'dd/MM/yyyy')}</p>
-                </div>
-              </div>
+          {projects.length === 0 ? (
+            <div className="card" style={{ padding: '24px', textAlign: 'center', color: '#718096' }}>
+              No active projects found.
             </div>
-          ))}
+          ) : (
+            projects.map(project => (
+              <div key={project.id} className="card project-progress-card">
+                <div className="project-header">
+                  <div>
+                    <h4>{project.name}</h4>
+                    <p className="muted-text" style={{fontSize: '12px'}}>{project.projectType}</p>
+                  </div>
+                  <span className="badge badge-info">In Progress</span>
+                </div>
+                
+                <div className="progress-section">
+                  <div className="progress-info">
+                    <span className="label">Progress</span>
+                    <span className="font-600">{project.percentComplete}%</span>
+                  </div>
+                  <div className="progress-bar-bg">
+                    <div className="progress-bar-fill" style={{width: `${project.percentComplete}%`}}></div>
+                  </div>
+                </div>
+                
+                <div className="project-footer">
+                  <div className="footer-item">
+                    <p className="label">Value</p>
+                    <p className="font-600">₹ {project.contractValue} L</p>
+                  </div>
+                  <div className="footer-item">
+                    <p className="label">Target Date</p>
+                    <p className="font-600">{format(new Date(project.targetEndDate), 'dd/MM/yyyy')}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

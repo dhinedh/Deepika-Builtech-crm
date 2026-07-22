@@ -7,7 +7,7 @@ export const requireAuth = async (req, res, next) => {
     // Check if token exists
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       if (process.env.NODE_ENV === 'development') {
-        req.user = { id: 'mock-user-id', email: 'admin@example.com' };
+        req.user = { id: 'mock-user-id', email: 'admin@deepika.com' };
         return next();
       }
       return res.status(401).json({ error: 'Unauthorized: No token provided' });
@@ -15,7 +15,7 @@ export const requireAuth = async (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
     if (token === 'mock-token' && process.env.NODE_ENV === 'development') {
-      req.user = { id: 'mock-user-id', email: 'admin@example.com' };
+      req.user = { id: 'mock-user-id', email: 'admin@deepika.com' };
       return next();
     }
     
@@ -24,7 +24,7 @@ export const requireAuth = async (req, res, next) => {
 
     if (error || !user) {
       if (process.env.NODE_ENV === 'development') {
-        req.user = { id: 'mock-user-id', email: 'admin@example.com' };
+        req.user = { id: 'mock-user-id', email: 'admin@deepika.com' };
         return next();
       }
       return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
