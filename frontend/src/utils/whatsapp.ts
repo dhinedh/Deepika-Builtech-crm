@@ -23,10 +23,10 @@ export const sendWhatsAppMessage = async (phone: string, name: string, template:
   try {
     const res = await sendAutomatedWhatsApp(formattedPhone, metaTemplateId, parameters);
     console.log('[WhatsApp API Result]:', res);
-    alert(`✅ WhatsApp message triggered successfully via Meta API to ${name} (${formattedPhone})!`);
+    console.info(`✅ WhatsApp message sent to ${name} (${formattedPhone}) via Meta API.`);
   } catch (err: any) {
     console.error('[WhatsApp API Send Failed, falling back to wa.me]:', err);
-    alert(`⚠️ Meta API Send failed: ${err.message || 'Server offline'}. Falling back to WhatsApp browser link.`);
+    console.warn('[WhatsApp Fallback] Meta API failed, opening wa.me link:', err?.message || err);
     
     // Construct local fallback text
     let message = '';

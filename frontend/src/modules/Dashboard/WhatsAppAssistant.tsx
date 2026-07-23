@@ -63,7 +63,7 @@ export const WhatsAppAssistant: React.FC = () => {
               </div>
               <div>
                 <p className="font-600" style={{ fontSize: '14px' }}>Weekly Check-in Due: {lead.contactName}</p>
-                <p className="muted-text" style={{ fontSize: '12px' }}>{lead.companyName} • Last updated 7+ days ago</p>
+                <p className="muted-text" style={{ fontSize: '12px' }}>{lead.companyName ? `${lead.companyName} • ` : ''}Last updated 7+ days ago</p>
               </div>
             </div>
             <button 
