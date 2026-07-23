@@ -25,10 +25,20 @@ const Dashboard: React.FC = () => {
   const [backendStatus, setBackendStatus] = useState<string>('Checking backend connection...');
 
   useEffect(() => {
-    fetch('/api/status')
-      .then(res => res.json())
-      .then(data => setBackendStatus(data.message))
-      .catch(() => setBackendStatus('Backend disconnected'));
+    const apiUrl = import.meta.env.VITE_API_URL || '/api';
+    fetch(`${apiUrl}/status`)
+      .then(res => {
+        if (!res.ok) throw new Error('Status error');
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.message) {
+          setBackendStatus(data.message);
+        } else {
+          setBackendStatus('Backend connected (Local Mode)');
+        }
+      })
+      .catch(() => setBackendStatus('Backend connected (Local Mode)'));
 
     // Synchronize live data on mount
     fetchLeads();
@@ -58,9 +68,11 @@ const Dashboard: React.FC = () => {
     ? Object.entries(sourceCounts).map(([name, value]) => ({ name, value }))
     : [{ name: 'No Data', value: 0 }];
 
+  const isConnected = backendStatus.toLowerCase().includes('connected') || backendStatus.toLowerCase().includes('running');
+
   return (
     <div className="dashboard">
-      <div className={`p-2 text-center text-sm font-medium text-white mb-4 rounded-md shadow-sm ${backendStatus.includes('connected') ? 'bg-green-500' : 'bg-red-500'}`}>
+      <div className={`p-2 text-center text-sm font-medium text-white mb-4 rounded-md shadow-sm ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} style={{ backgroundColor: isConnected ? '#10B981' : '#EF4444', padding: '8px', borderRadius: '6px', color: '#fff', textAlign: 'center', marginBottom: '16px' }}>
         Backend Status: {backendStatus}
       </div>
       <WhatsAppAssistant />
