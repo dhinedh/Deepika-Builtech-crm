@@ -282,6 +282,24 @@ export const useCRMStore = create<CRMState>()(
     }),
     {
       name: 'deepika-crm-storage',
+      version: 2,
+      migrate: () => ({
+        leads: sampleLeads,
+        enquiries: sampleEnquiries,
+        contacts: sampleContacts,
+        companies: [],
+        projects: [],
+        deals: [],
+        tasks: [],
+        followUps: [],
+        quotations: [],
+        communications: [],
+        siteVisits: [],
+        vendors: [],
+        pos: [],
+        users: sampleUsers,
+        currentUser: sampleUsers[0] || null,
+      }),
     }
   )
 );
