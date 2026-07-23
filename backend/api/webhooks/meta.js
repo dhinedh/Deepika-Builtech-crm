@@ -19,6 +19,145 @@ function getUserSession(id) {
   return userSessions.get(id);
 }
 
+/**
+ * Extract project type from free-text message.
+ * Returns a ProjectType string or null if not detected.
+ */
+function extractProjectType(text) {
+  const t = text.toLowerCase();
+  if (t.includes('cold storage') || t.includes('cold room') || t.includes('freezer')) return 'Cold Storage';
+  if (t.includes('mezzanine') || t.includes('mezanine') || t.includes('mezzaine')) return 'Mezzanine Floor';
+  if (t.includes('eot') || t.includes('crane') || t.includes('overhead crane')) return 'EOT Crane';
+  if (t.includes('factory') || t.includes('shed') || t.includes('industrial shed') || t.includes('fabrication shed')) return 'Factory/Shed';
+  if (t.includes('civil') || t.includes('concrete') || t.includes('rcc') || t.includes('foundation')) return 'Civil Construction';
+  if (t.includes('godown') || t.includes('warehouse') || t.includes('storage') || t.includes('peb') || t.includes('pre-engineered') || t.includes('pre engineered')) return 'PEB Warehouse';
+  return null;
+}
+
+/**
+ * Extract company name from free-text message.
+ * Returns a string or null if not detected.
+ */
+function extractCompanyName(text) {
+  // Patterns: "from XYZ", "company: XYZ", "our company XYZ", "we are XYZ", "I am from XYZ"
+  const patterns = [
+    /(?:from|company[:\s]+|our company[:\s]+|we are[:\s]+|i am from[:\s]+|i'm from[:\s]+|i work (?:at|for)[:\s]+|representing[:\s]+)([A-Z][A-Za-z0-9 &.,'-]{2,40})/i,
+    /(?:company name[:\s]+|firm[:\s]+|organisation[:\s]+|organization[:\s]+)([A-Z][A-Za-z0-9 &.,'-]{2,40})/i,
+  ];
+  for (const pat of patterns) {
+    const match = text.match(pat);
+    if (match && match[1]) return match[1].trim();
+  }
+  return null;
+}
+
+/**
+ * Upsert a lead and enquiry record in the CRM DB when a chat message arrives.
+ * Extracts any available info (project type, company name) from the message.
+ */
+async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messageText, sessionData = {} }) {
+  try {
+    const detectedProjectType = extractProjectType(messageText);
+    const detectedCompany     = extractCompanyName(messageText);
+    const source = platform === 'facebook' ? 'Facebook Messenger' : 'Instagram DM';
+    const now    = new Date().toISOString();
+
+    // ---- LEADS table ----
+    const { data: existingLeads } = await supabase
+      .from('leads')
+      .select('id,projectType,companyName')
+      .eq('phone', phoneIdentifier);
+
+    const lead = existingLeads && existingLeads.length > 0 ? existingLeads[0] : null;
+
+    if (lead) {
+      // Only update fields that were previously unknown
+      const updates = { updated_at: now, lastMessage: messageText };
+      if (detectedProjectType && (!lead.projectType || lead.projectType === 'Not Mentioned')) {
+        updates.projectType = detectedProjectType;
+      }
+      if (detectedCompany && !lead.companyName) {
+        updates.companyName = detectedCompany;
+      }
+      // Update from chatbot quiz answers
+      if (sessionData.site_location)     updates.location  = sessionData.site_location;
+      if (sessionData.area_required)     updates.landArea  = sessionData.area_required;
+      if (sessionData.project_timeline)  updates.timeline  = sessionData.project_timeline;
+      if (sessionData.selected_service && sessionData.selected_service !== 'PEB / General Enquiry') {
+        updates.projectType = sessionData.selected_service;
+      }
+
+      await supabase.from('leads').update(updates).eq('phone', phoneIdentifier);
+      console.log(`[CRM Sync] Updated lead for ${customerName} (${phoneIdentifier})`);
+    } else {
+      // Create new lead record
+      await supabase.from('leads').insert([{
+        id:          `lead-${platform.slice(0,2)}-${Date.now()}`,
+        contactName: customerName,
+        phone:       phoneIdentifier,
+        companyName: detectedCompany || '',
+        projectType: detectedProjectType || 'Not Mentioned',
+        source,
+        status:      'New',
+        leadScore:   40,
+        location:    sessionData.site_location || '',
+        landArea:    sessionData.area_required || '',
+        timeline:    sessionData.project_timeline || 'To be confirmed',
+        notes:       `Captured via ${source}. First message: "${messageText.substring(0, 200)}"`,
+        created_at:  now,
+        updated_at:  now
+      }]);
+      console.log(`[CRM Sync] Created new lead for ${customerName} (${phoneIdentifier})`);
+    }
+
+    // ---- ENQUIRIES table ----
+    const { data: existingEnq } = await supabase
+      .from('enquiries')
+      .select('id')
+      .eq('phone', phoneIdentifier);
+
+    if (existingEnq && existingEnq.length > 0) {
+      await supabase.from('enquiries').update({
+        lastMessage: messageText.substring(0, 500),
+        updated_at:  now
+      }).eq('phone', phoneIdentifier);
+    } else {
+      await supabase.from('enquiries').insert([{
+        id:          `enq-${platform.slice(0,2)}-${Date.now()}`,
+        contactName: customerName,
+        phone:       phoneIdentifier,
+        lastMessage: messageText.substring(0, 500),
+        source,
+        status:      'New',
+        created_at:  now,
+        updated_at:  now
+      }]);
+    }
+
+    // ---- CONTACTS table ----
+    const { data: existingContacts } = await supabase
+      .from('contacts')
+      .select('id')
+      .eq('phone', phoneIdentifier);
+
+    if (!existingContacts || existingContacts.length === 0) {
+      await supabase.from('contacts').insert([{
+        id:             `con-${platform.slice(0,2)}-${Date.now()}`,
+        fullName:       customerName,
+        phone:          phoneIdentifier,
+        designation:    'Client / Enquirer',
+        isDecisionMaker: true,
+        type:           'Client Active',
+        industry:       'Construction / PEB',
+        created_at:     now
+      }]);
+    }
+
+  } catch (err) {
+    console.error('[CRM Sync Error]:', err.message);
+  }
+}
+
 function calculateLeadScore(session) {
   let score = 0;
   const budget = session.budget_range;
@@ -402,12 +541,23 @@ export default async function handler(req, res) {
           const messaging = entry.messaging[0];
           // Filter out echoes sent by the page itself
           if (messaging && messaging.message && !messaging.message.is_echo) {
-            const senderId = messaging.sender?.id;
+            const senderId    = messaging.sender?.id;
             const recipientId = messaging.recipient?.id;
             const messageText = messaging.message.text || messaging.message.quick_reply?.payload || '';
-            const platform = body.object === 'page' ? 'facebook' : 'instagram';
-            
+            const platform    = body.object === 'page' ? 'facebook' : 'instagram';
+            const phoneIdentifier = platform === 'facebook' ? `fb:${senderId}` : `ig:${senderId}`;
+
             const customerName = await getMetaUserProfile(senderId, platform) || (platform === 'facebook' ? 'Facebook Customer' : 'Instagram Customer');
+
+            // ✅ Sync CRM on every message — creates or updates lead/enquiry/contact
+            const session = getUserSession(phoneIdentifier);
+            await syncCRMFromChat({
+              phoneIdentifier,
+              customerName,
+              platform,
+              messageText,
+              sessionData: session
+            });
 
             // Trigger full interactive chatbot (state machine)
             await handleMetaChatbot(senderId, recipientId, platform, messageText, customerName);
