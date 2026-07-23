@@ -96,17 +96,6 @@ export const sampleContacts: Contact[] = [
     "createdAt": "2026-07-16T16:10:00.000Z"
   },
   {
-    "id": "con-fb-9",
-    "fullName": "Mugil",
-    "designation": "Client / Enquirer",
-    "phone": "FB Messenger",
-    "isDecisionMaker": true,
-    "type": "Client Active",
-    "city": "Chennai / Tamil Nadu",
-    "industry": "Construction / PEB",
-    "createdAt": "2026-07-22T20:48:00.000Z"
-  },
-  {
     "id": "con-fb-10",
     "fullName": "Kartik Sethi",
     "designation": "Client / Enquirer",
@@ -308,24 +297,7 @@ export const sampleLeads: Lead[] = [
     "createdAt": "2026-07-16T16:10:00.000Z",
     "updatedAt": "2026-07-16T16:10:00.000Z"
   },
-  {
-    "id": "lead-fb-9",
-    "contactName": "Mugil",
-    "companyName": "",
-    "phone": "FB Messenger",
-    "projectType": "PEB / Pre-Engineered Building",
-    "location": "Tamil Nadu, India",
-    "landArea": "",
-    "estimatedBudget": 0,
-    "timeline": "To be confirmed",
-    "source": "Facebook Messenger",
-    "assignedTo": "u1",
-    "status": "New",
-    "leadScore": 80,
-    "notes": "Captured from FB Messenger. Message: \"Hi - Interested in Pre-Engineered Building options\" — Project type: PEB. No company mentioned.",
-    "createdAt": "2026-07-22T20:48:00.000Z",
-    "updatedAt": "2026-07-22T20:48:00.000Z"
-  },
+
   {
     "id": "lead-fb-10",
     "contactName": "Kartik Sethi",
@@ -491,15 +463,7 @@ export const sampleEnquiries: Enquiry[] = [
     "createdAt": "2026-07-16T16:10:00.000Z",
     "updatedAt": "2026-07-16T16:10:00.000Z"
   },
-  {
-    "id": "enq-fb-009",
-    "contactName": "Mugil",
-    "phone": "FB Messenger",
-    "lastMessage": "Hi - Interested in Pre-Engineered Building options",
-    "status": "New",
-    "createdAt": "2026-07-22T20:48:00.000Z",
-    "updatedAt": "2026-07-22T20:48:00.000Z"
-  },
+
   {
     "id": "enq-fb-010",
     "contactName": "Kartik Sethi",

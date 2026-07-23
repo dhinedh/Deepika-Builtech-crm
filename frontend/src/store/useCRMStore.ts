@@ -282,7 +282,7 @@ export const useCRMStore = create<CRMState>()(
     }),
     {
       name: 'deepika-crm-storage',
-      version: 2,
+      version: 4,
       migrate: () => ({
         leads: sampleLeads,
         enquiries: sampleEnquiries,
@@ -300,6 +300,14 @@ export const useCRMStore = create<CRMState>()(
         users: sampleUsers,
         currentUser: sampleUsers[0] || null,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Always clear mock companies/projects/deals after rehydration
+        if (state) {
+          state.companies = [];
+          state.projects = [];
+          state.deals = [];
+        }
+      },
     }
   )
 );
