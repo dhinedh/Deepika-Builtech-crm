@@ -114,7 +114,7 @@ export const useCRMStore = create<CRMState>()(
               contactName: lead.contactName || 'Unspecified',
               companyName: lead.companyName || '',
               phone: lead.phone || '',
-              projectType: lead.projectType || 'PEB',
+              projectType: lead.projectType || 'Not Mentioned',
               location: lead.location || '',
               landArea: lead.landArea || '',
               estimatedBudget: lead.estimatedBudget || 0,

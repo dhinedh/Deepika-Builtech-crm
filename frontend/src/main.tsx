@@ -6,7 +6,7 @@ import './index.css'
 // ── Data Version Guard ──────────────────────────────────────────────────────
 // Bump this string any time sampleData changes. On mismatch the old
 // Zustand-persisted state is cleared so the store rehydrates from fresh data.
-const DATA_VERSION = '2026-07-23-v5';
+const DATA_VERSION = '2026-07-23-v6';
 const storedDataVersion = localStorage.getItem('crm-data-version');
 if (storedDataVersion !== DATA_VERSION) {
   localStorage.removeItem('deepika-crm-storage');
