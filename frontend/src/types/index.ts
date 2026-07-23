@@ -10,9 +10,9 @@ export interface User {
 }
 
 export type LeadStatus = 'New' | 'Contacted' | 'Qualified' | 'Site Visit Done' | 'Quotation Sent' | 'Won' | 'Not Interested' | 'Lost';
-export type ProjectType = 'PEB Warehouse' | 'Cold Storage' | 'Mezzanine Floor' | 'EOT Crane' | 'Factory/Shed' | 'Civil Construction' | 'Other';
+export type ProjectType = 'PEB Warehouse' | 'Cold Storage' | 'Mezzanine Floor' | 'EOT Crane' | 'Factory/Shed' | 'Civil Construction' | 'PEB / Pre-Engineered Building' | 'Not Mentioned' | 'Other';
 export type LeadSource = 'Website Form' | 'WhatsApp' | 'Instagram DM' | 'Facebook Messenger' | 'Phone Call' | 'Referral' | 'Google Search' | 'Site Walk-in' | 'LinkedIn' | 'Trade Fair';
-export type TimelineRequired = 'Immediate' | '1-3 months' | '3-6 months' | 'Planning stage';
+export type TimelineRequired = 'Immediate' | '1-3 months' | '3-6 months' | 'Planning stage' | 'To be confirmed';
 
 export interface Lead {
   id: string;
