@@ -51,6 +51,13 @@ const notifyListeners = (event: string, session: any) => {
 
 const isPlaceholderUrl = !supabaseUrl || supabaseUrl.includes('lwacdwackjnifrjgkrom') || supabaseUrl.includes('YOUR_REAL_PROJECT_ID');
 
+// ── Local user accounts (used when Supabase is offline / placeholder URL) ──
+const LOCAL_USERS: Array<{ email: string; password: string; name: string; role: string }> = [
+  { email: 'admin@deepikabuiltech.com', password: 'Deepika@2024', name: 'Admin',        role: 'Admin' },
+  { email: 'marketing@deepikabuiltech.com', password: 'Marketing@2024', name: 'Marketing Team', role: 'Sales Executive' },
+  { email: 'manager@deepikabuiltech.com', password: 'Manager@2024', name: 'Manager',   role: 'Manager' },
+];
+
 const authProxy = {
   getSession: async () => {
     if (isPlaceholderUrl) {
@@ -71,21 +78,28 @@ const authProxy = {
 
   signInWithPassword: async (credentials: any) => {
     if (isPlaceholderUrl) {
-      console.info('[Supabase Auth] Using local auth mode with provided credentials.');
-      const email = credentials.email || 'admin@deepika.com';
-      const name = email.split('@')[0];
+      const match = LOCAL_USERS.find(
+        u => u.email.toLowerCase() === (credentials.email || '').toLowerCase()
+           && u.password === credentials.password
+      );
+      if (!match) {
+        return {
+          data: { user: null, session: null },
+          error: { message: 'Invalid email or password. Please check your credentials.' }
+        };
+      }
       const mockSession = {
-        access_token: 'mock-token',
-        token_type: 'bearer',
-        expires_in: 3600,
-        refresh_token: 'mock-refresh-token',
+        access_token:  'local-token',
+        token_type:    'bearer',
+        expires_in:    86400,
+        refresh_token: 'local-refresh-token',
         user: {
-          id: `u-${Date.now()}`,
-          email: email,
-          user_metadata: { full_name: name.charAt(0).toUpperCase() + name.slice(1) },
-          aud: 'authenticated',
-          role: 'authenticated',
-          created_at: new Date().toISOString()
+          id:            `u-${match.email}`,
+          email:         match.email,
+          user_metadata: { full_name: match.name, role: match.role },
+          aud:           'authenticated',
+          role:          'authenticated',
+          created_at:    new Date().toISOString()
         }
       };
       setLocalMockSession(mockSession);
