@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Calendar, Check, X } from 'lucide-react';
-import { sendWhatsAppMessage } from '../../utils/whatsapp';
+import { sendOmniChannelMessage } from '../../utils/whatsapp';
 import { useCRMStore } from '../../store/useCRMStore';
 
 interface AutoFollowProps {
@@ -15,7 +15,7 @@ export const WhatsAppAutoFollow: React.FC<AutoFollowProps> = ({ phone, name, con
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleWhatsApp = () => {
-    sendWhatsAppMessage(phone, name, 'intro');
+    sendOmniChannelMessage({ contactName: name, phone, id: leadId }, 'intro');
     
     // Complete previous follow-ups
     completeFollowUp(contactId, 'WhatsApp message sent');

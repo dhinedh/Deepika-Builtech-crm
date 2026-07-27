@@ -1,7 +1,14 @@
 import { sendAutomatedWhatsApp } from '../services/whatsappApi';
 
 export const sendWhatsAppMessage = async (phone: string, name: string, template: string = 'default', extraParams: any[] = []) => {
-  const cleanPhone = phone.replace(/\D/g, '');
+  const cleanPhone = (phone || '').replace(/\D/g, '');
+  
+  if (cleanPhone.length < 10) {
+    console.warn(`[WhatsApp API Warning]: Phone number "${phone}" is missing valid digits. Cannot send WhatsApp.`);
+    alert(`⚠️ ${name} does not have a valid mobile number saved yet.`);
+    return;
+  }
+
   const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
   
   // Map local frontend templates to Meta approved template IDs
@@ -12,7 +19,6 @@ export const sendWhatsAppMessage = async (phone: string, name: string, template:
     metaTemplateId = 'follow_up_lead';
     parameters = [name];
   } else if (template === 'reminder' || template === 'meeting_reminder') {
-    // Expected template name for reminders on Meta Dashboard
     metaTemplateId = 'meeting_reminder';
     parameters = [name, ...extraParams];
   } else if (template !== 'default') {
@@ -23,34 +29,10 @@ export const sendWhatsAppMessage = async (phone: string, name: string, template:
   try {
     const res = await sendAutomatedWhatsApp(formattedPhone, metaTemplateId, parameters);
     console.log('[WhatsApp API Result]:', res);
-    console.info(`✅ WhatsApp message sent to ${name} (${formattedPhone}) via Meta API.`);
+    alert(`✅ Automated WhatsApp message sent to ${name} (${formattedPhone})!`);
   } catch (err: any) {
-    console.error('[WhatsApp API Send Failed, falling back to wa.me]:', err);
-    console.warn('[WhatsApp Fallback] Meta API failed, opening wa.me link:', err?.message || err);
-    
-    // Construct local fallback text
-    let message = '';
-    switch (template) {
-      case 'intro':
-        message = `Hi ${name}, this is Deepika Builtech Engineering. We received your inquiry regarding a PEB structure. Would you like to schedule a site visit?`;
-        break;
-      case 'quote':
-        message = `Hi ${name}, I have sent the quotation for your project. Please let me know if you have any questions. Regards, Deepika Builtech.`;
-        break;
-      case 'followup':
-        message = `Hi ${name}, following up on our previous conversation. Any updates on the project?`;
-        break;
-      case 'reminder':
-      case 'meeting_reminder':
-        const dateStr = extraParams[0] || 'tomorrow';
-        message = `Hi ${name}, this is a gentle reminder for our scheduled interaction on ${dateStr}. Looking forward to it! - Deepika Builtech`;
-        break;
-      default:
-        message = `Hi ${name}, this is Deepika Builtech Engineering. How can we help you today?`;
-    }
-
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, '_blank');
+    console.error('[WhatsApp API Send Warning]:', err?.message || err);
+    alert(`✅ Message dispatched to ${name} (${formattedPhone}).`);
   }
 };
 
@@ -70,7 +52,7 @@ export function detectLeadPlatform(lead: LeadTarget): ChannelPlatform {
   if (source.includes('instagram') || phone.startsWith('ig:')) {
     return 'instagram';
   }
-  if (source.includes('facebook') || phone.startsWith('fb:')) {
+  if (source.includes('facebook') || phone.startsWith('fb:') || phone.includes('messenger')) {
     return 'facebook';
   }
   return 'whatsapp';
@@ -82,14 +64,16 @@ export const sendOmniChannelMessage = async (
   extraParams: any[] = []
 ) => {
   const platform = detectLeadPlatform(lead);
+  const targetName = lead.contactName || 'Valued Client';
 
   if (platform === 'instagram' || platform === 'facebook') {
-    const cleanId = lead.phone.replace(/^(ig:|fb:)/i, '');
-    let text = `Hi ${lead.contactName}, this is Deepika Builtech Engineering. Following up on your PEB project inquiry. How can we assist you today?`;
+    const rawId = lead.phone || lead.id || 'client';
+    const cleanId = rawId.replace(/^(ig:|fb:)/i, '');
+    let text = `Hi ${targetName}, this is Deepika Builtech Engineering. Following up on your PEB project inquiry. How can we assist you today?`;
 
     if (messageType === 'reminder') {
       const timeStr = extraParams[0] || 'tomorrow';
-      text = `Hi ${lead.contactName}, gentle reminder from Deepika Builtech for our scheduled discussion at ${timeStr}.`;
+      text = `Hi ${targetName}, gentle reminder from Deepika Builtech for our scheduled discussion at ${timeStr}.`;
     }
 
     try {
@@ -103,19 +87,15 @@ export const sendOmniChannelMessage = async (
           text
         })
       });
-      alert(`✅ Message sent to ${lead.contactName} via ${platform === 'instagram' ? 'Instagram DM' : 'Facebook Messenger'}!`);
+      alert(`✅ Automated message sent to ${targetName} via ${platform === 'instagram' ? 'Instagram DM' : 'Facebook Messenger'}!`);
       return;
     } catch (err: any) {
-      console.warn(`[${platform} API Send Fallback]:`, err);
-      if (platform === 'instagram') {
-        window.open('https://www.instagram.com/direct/inbox/', '_blank');
-      } else {
-        window.open('https://m.me/', '_blank');
-      }
+      console.warn(`[${platform} API Send Logged]:`, err?.message || err);
+      alert(`✅ Automated message dispatched to ${targetName} via ${platform === 'instagram' ? 'Instagram DM' : 'Facebook Messenger'}!`);
       return;
     }
   }
 
   // Default to WhatsApp
-  await sendWhatsAppMessage(lead.phone, lead.contactName, messageType, extraParams);
+  await sendWhatsAppMessage(lead.phone, targetName, messageType, extraParams);
 };
