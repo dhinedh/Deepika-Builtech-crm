@@ -1,5 +1,28 @@
 import { supabase } from '../../config/supabase.js';
 import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+
+// Helper to guarantee local db.json persistence
+function saveToLocalDbJson(table, item) {
+  try {
+    const dbPath = path.resolve('db.json');
+    if (!fs.existsSync(dbPath)) return;
+    const raw = fs.readFileSync(dbPath, 'utf8');
+    const data = JSON.parse(raw);
+    if (!data[table]) data[table] = [];
+    
+    const existingIdx = data[table].findIndex((x) => (x.id && item.id && x.id === item.id) || (x.phone && item.phone && x.phone === item.phone));
+    if (existingIdx >= 0) {
+      data[table][existingIdx] = { ...data[table][existingIdx], ...item, updatedAt: new Date().toISOString(), updated_at: new Date().toISOString() };
+    } else {
+      data[table].unshift({ ...item, createdAt: new Date().toISOString(), created_at: new Date().toISOString() });
+    }
+    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.warn(`[Local DB Sync Warning]:`, err.message);
+  }
+}
 
 // In-memory conversation state store for Meta Messenger & Instagram DM
 const userSessions = new Map();
@@ -137,6 +160,8 @@ async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messag
 
     const lead = existingLeads && existingLeads.length > 0 ? existingLeads[0] : null;
 
+    let leadRecord = null;
+
     if (lead) {
       const updates = { 
         updated_at: now, 
@@ -166,12 +191,13 @@ async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messag
       }
 
       await supabase.from('leads').update(updates).eq('id', lead.id);
+      leadRecord = { ...lead, ...updates };
       console.log(`[CRM Sync] Updated lead for ${customerName} (${realPhone})`);
     } else {
       const isRichInquiry = detectedProjectType && (detectedArea || detectedLoc);
       const score = isRichInquiry ? 90 : 40;
 
-      await supabase.from('leads').insert([{
+      leadRecord = {
         id:          `lead-${platform.slice(0,2)}-${Date.now()}`,
         contactName: customerName,
         phone:       realPhone,
@@ -188,15 +214,33 @@ async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messag
         updatedAt:   now,
         created_at:  now,
         updated_at:  now
-      }]);
+      };
+
+      await supabase.from('leads').insert([leadRecord]);
       console.log(`[CRM Sync] Created new lead for ${customerName} (${realPhone})`);
     }
+
+    // Direct guarantee write to db.json
+    saveToLocalDbJson('leads', leadRecord);
 
     // ---- ENQUIRIES table ----
     const { data: existingEnq } = await supabase
       .from('enquiries')
       .select('id')
       .or(`phone.eq.${phoneIdentifier},phone.eq.${realPhone}`);
+
+    const enqRecord = {
+      id:          `enq-${platform.slice(0,2)}-${Date.now()}`,
+      contactName: customerName,
+      phone:       realPhone,
+      lastMessage: messageText.substring(0, 500),
+      source,
+      status:      'New',
+      createdAt:   now,
+      updatedAt:   now,
+      created_at:  now,
+      updated_at:  now
+    };
 
     if (existingEnq && existingEnq.length > 0) {
       await supabase.from('enquiries').update({
@@ -205,19 +249,10 @@ async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messag
         updated_at:  now,
         updatedAt:   now
       }).eq('id', existingEnq[0].id);
+      saveToLocalDbJson('enquiries', { ...existingEnq[0], ...enqRecord });
     } else {
-      await supabase.from('enquiries').insert([{
-        id:          `enq-${platform.slice(0,2)}-${Date.now()}`,
-        contactName: customerName,
-        phone:       realPhone,
-        lastMessage: messageText.substring(0, 500),
-        source,
-        status:      'New',
-        createdAt:   now,
-        updatedAt:   now,
-        created_at:  now,
-        updated_at:  now
-      }]);
+      await supabase.from('enquiries').insert([enqRecord]);
+      saveToLocalDbJson('enquiries', enqRecord);
     }
 
     // ---- CONTACTS table ----

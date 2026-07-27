@@ -83,6 +83,12 @@ const App: React.FC = () => {
     useCRMStore.getState().fetchLeads();
     useCRMStore.getState().fetchEnquiries();
 
+    // Auto-poll live database every 10 seconds so new incoming leads appear automatically
+    const pollInterval = setInterval(() => {
+      useCRMStore.getState().fetchLeads();
+      useCRMStore.getState().fetchEnquiries();
+    }, 10000);
+
     // Asynchronously restore session if present without blocking initial page render
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
@@ -112,6 +118,7 @@ const App: React.FC = () => {
     });
 
     return () => {
+      clearInterval(pollInterval);
       subscription.unsubscribe();
     };
   }, []);
