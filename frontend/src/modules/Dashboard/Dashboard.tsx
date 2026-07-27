@@ -10,7 +10,6 @@ import {
 import { useCRMStore } from '../../store/useCRMStore';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { WhatsAppAssistant } from './WhatsAppAssistant.tsx';
 import './Dashboard.css';
 
 const COLORS = ['#0D2C5E', '#1B50A0', '#E8622A', '#1D9E75', '#BA7517', '#718096'];
@@ -75,7 +74,6 @@ const Dashboard: React.FC = () => {
       <div className={`p-2 text-center text-sm font-medium text-white mb-4 rounded-md shadow-sm ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} style={{ backgroundColor: isConnected ? '#10B981' : '#EF4444', padding: '8px', borderRadius: '6px', color: '#fff', textAlign: 'center', marginBottom: '16px' }}>
         Backend Status: {backendStatus}
       </div>
-      <WhatsAppAssistant />
 
       {/* Stats Row */}
       <div className="stats-grid">
