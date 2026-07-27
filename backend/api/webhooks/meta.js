@@ -449,6 +449,35 @@ async function handleMetaChatbot(senderId, recipientId, platform, messageText, c
     return;
   }
 
+  // 3. Smart Intent-Based Auto Replies for Customer Inquiries
+
+  // A. Pricing / Cost / Estimate Inquiry
+  if (msgLower.includes("cost") || msgLower.includes("price") || msgLower.includes("rate") || msgLower.includes("estimate") || msgLower.includes("sqft") || msgLower.includes("budget") || msgLower.includes("quote")) {
+    await sendMetaChatMessage(senderId, recipientId, platform, `💰 *Deepika Builtech PEB Pricing Estimates*\n\nHere are standard estimates based on recent Tamil Nadu projects:\n\n🏗️ *PEB Structural Framing:* ₹180 – ₹260 / sq. ft.\n🏬 *Complete Turnkey Warehouse (Civil + PEB):* ₹280 – ₹380 / sq. ft.\n❄️ *Cold Storage Facility:* ₹450 – ₹650 / sq. ft.\n\n*Note:* Final cost depends on clear span, roof height & location.\n\nType *3* or select *Free Quote* below to get an exact custom estimate for your project!`, [
+      { id: "btn_quote", title: "3 - Free Quote" },
+      { id: "btn_menu", title: "Main Menu" }
+    ]);
+    return;
+  }
+
+  // B. Location / Office / Site Visit Inquiry
+  if (msgLower.includes("visit") || msgLower.includes("location") || msgLower.includes("address") || msgLower.includes("office") || msgLower.includes("map") || msgLower.includes("ambattur") || msgLower.includes("where")) {
+    await sendMetaChatMessage(senderId, recipientId, platform, `📍 *Deepika Builtech Engineering Locations*\n\n🏢 *Head Office:* SIDCO Industrial Estate, Ambattur, Chennai — 600098\n🏭 *Unit I:* Kanchipuram District\n🏭 *Unit II:* Thirumullaivoyal, Thiruvallur\n\n🕐 *Working Hours:* Mon – Sat: 9 AM – 6 PM\n📞 *Direct Call / WhatsApp:* +91 96000 67611\n\nWould you like our engineering team to schedule a *free site visit*? Reply with your location or preferred date!`, [
+      { id: "btn_quote", title: "3 - Free Quote" },
+      { id: "btn_human", title: "5 - Talk to Human" }
+    ]);
+    return;
+  }
+
+  // C. Services / Technical Capabilities Inquiry
+  if (msgLower.includes("service") || msgLower.includes("warehouse") || msgLower.includes("shed") || msgLower.includes("cold storage") || msgLower.includes("mezzanine") || msgLower.includes("crane")) {
+    await sendMetaChatMessage(senderId, recipientId, platform, `🔧 *Our PEB & Construction Services*\n\n1️⃣ *PEB Warehouses & Godowns* (Large clear spans)\n2️⃣ *Industrial Factory Sheds* (Heavy structural fabrication)\n3️⃣ *Mezzanine Floors* (Double your storage capacity)\n4️⃣ *Cold Storage Facilities* (PUF insulated panels)\n5️⃣ *EOT Crane Structures* (Up to 50 Ton capacity)\n6️⃣ *Civil Foundation & RCC Works*\n\nSelect an option below to learn more or get an estimate:`, [
+      { id: "btn_quote", title: "3 - Free Quote" },
+      { id: "btn_about", title: "1 - About Us" }
+    ]);
+    return;
+  }
+
   // Human Takeover check
   if (msgLower === "5" || msgLower === "btn_human" || msgLower.includes("human") || msgLower.includes("agent") || msgLower.includes("talk to someone")) {
     session.is_paused = true;

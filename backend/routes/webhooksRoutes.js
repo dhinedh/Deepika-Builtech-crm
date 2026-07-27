@@ -395,4 +395,51 @@ router.post('/whatsapp-bot-enquiry', async (req, res) => {
   }
 });
 
+/**
+ * POST endpoint to send direct messages to Instagram DM or Facebook Messenger
+ */
+router.post('/send-meta', async (req, res) => {
+  const { platform, recipientId, text } = req.body;
+  const token = process.env.PAGE_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN;
+
+  if (!recipientId || !text) {
+    return res.status(400).json({ error: 'Missing recipientId or message text' });
+  }
+
+  const cleanRecipientId = recipientId.replace(/^(ig:|fb:)/, '');
+  const targetPlatform = platform || (recipientId.startsWith('ig:') ? 'instagram' : 'facebook');
+
+  try {
+    const response = await axios({
+      method: 'POST',
+      url: `https://graph.facebook.com/v18.0/me/messages`,
+      params: { access_token: token },
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        recipient: { id: cleanRecipientId },
+        message: { text }
+      }
+    });
+
+    console.log(`✅ [Outbound ${targetPlatform.toUpperCase()} Message Sent] to ${cleanRecipientId}`);
+    return res.json({ success: true, data: response.data });
+  } catch (err) {
+    console.error(`❌ [Outbound ${targetPlatform.toUpperCase()} Send Error]:`, err.response?.data || err.message);
+    return res.status(500).json({ error: err.response?.data?.error?.message || err.message });
+  }
+});
+
+/**
+ * POST endpoint to manually trigger 7-day auto reminder scan across all platforms
+ */
+router.post('/trigger-7day-reminders', async (req, res) => {
+  try {
+    const { execute7DayReminderScan } = await import('../services/cronJobs.js');
+    const result = await execute7DayReminderScan();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

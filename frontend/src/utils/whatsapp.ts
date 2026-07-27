@@ -53,3 +53,69 @@ export const sendWhatsAppMessage = async (phone: string, name: string, template:
     window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, '_blank');
   }
 };
+
+export type ChannelPlatform = 'whatsapp' | 'instagram' | 'facebook';
+
+export interface LeadTarget {
+  id?: string;
+  contactName: string;
+  phone: string;
+  source?: string;
+}
+
+export function detectLeadPlatform(lead: LeadTarget): ChannelPlatform {
+  const source = (lead.source || '').toLowerCase();
+  const phone = (lead.phone || '').toLowerCase();
+
+  if (source.includes('instagram') || phone.startsWith('ig:')) {
+    return 'instagram';
+  }
+  if (source.includes('facebook') || phone.startsWith('fb:')) {
+    return 'facebook';
+  }
+  return 'whatsapp';
+}
+
+export const sendOmniChannelMessage = async (
+  lead: LeadTarget,
+  messageType: 'followup' | 'reminder' | 'intro' = 'followup',
+  extraParams: any[] = []
+) => {
+  const platform = detectLeadPlatform(lead);
+
+  if (platform === 'instagram' || platform === 'facebook') {
+    const cleanId = lead.phone.replace(/^(ig:|fb:)/i, '');
+    let text = `Hi ${lead.contactName}, this is Deepika Builtech Engineering. Following up on your PEB project inquiry. How can we assist you today?`;
+
+    if (messageType === 'reminder') {
+      const timeStr = extraParams[0] || 'tomorrow';
+      text = `Hi ${lead.contactName}, gentle reminder from Deepika Builtech for our scheduled discussion at ${timeStr}.`;
+    }
+
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+      await fetch(`${API_BASE_URL}/webhooks/send-meta`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          platform,
+          recipientId: cleanId,
+          text
+        })
+      });
+      alert(`✅ Message sent to ${lead.contactName} via ${platform === 'instagram' ? 'Instagram DM' : 'Facebook Messenger'}!`);
+      return;
+    } catch (err: any) {
+      console.warn(`[${platform} API Send Fallback]:`, err);
+      if (platform === 'instagram') {
+        window.open('https://www.instagram.com/direct/inbox/', '_blank');
+      } else {
+        window.open('https://m.me/', '_blank');
+      }
+      return;
+    }
+  }
+
+  // Default to WhatsApp
+  await sendWhatsAppMessage(lead.phone, lead.contactName, messageType, extraParams);
+};

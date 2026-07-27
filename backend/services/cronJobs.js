@@ -1,61 +1,137 @@
 import cron from 'node-cron';
+import axios from 'axios';
 import { supabase } from '../config/supabase.js';
 import { sendWhatsAppMessage } from '../whatsappService.js';
 
 // In-memory store to prevent duplicate reminders if DB update fails (fallback)
 const sentReminders = new Set();
 
+/**
+ * Send 7-day reminder message to a lead or enquiry on their original platform (WhatsApp, Instagram, FB)
+ */
+export async function sendAuto7DayReminder(record) {
+  const phone = record.phone || '';
+  const name = record.contactName || record.fullName || 'Valued Client';
+  const source = (record.source || '').toLowerCase();
+  const token = process.env.PAGE_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN;
+  const messageText = `Hi ${name}, this is Deepika Builtech Engineering 🏗️.\n\nFollowing up on your PEB structure & construction inquiry! Do you have any updates or questions regarding your project requirements? We are happy to share layout ideas and a rough cost estimate.\n\n📞 Call / WhatsApp: +91 96000 67611\n🌐 deepikabuiltech.com`;
+
+  // 1. Instagram DM
+  if (source.includes('instagram') || phone.startsWith('ig:')) {
+    const recipientId = phone.replace(/^ig:/i, '');
+    if (token && recipientId) {
+      try {
+        await axios.post(
+          'https://graph.facebook.com/v18.0/me/messages',
+          { recipient: { id: recipientId }, message: { text: messageText } },
+          { params: { access_token: token } }
+        );
+        console.log(`[7-Day Auto Reminder] Sent Instagram DM to ${name} (${recipientId})`);
+        return true;
+      } catch (err) {
+        console.warn(`[Auto Reminder Error - Instagram]:`, err.response?.data || err.message);
+      }
+    }
+  }
+
+  // 2. Facebook Messenger
+  if (source.includes('facebook') || phone.startsWith('fb:')) {
+    const recipientId = phone.replace(/^fb:/i, '');
+    if (token && recipientId) {
+      try {
+        await axios.post(
+          'https://graph.facebook.com/v18.0/me/messages',
+          { recipient: { id: recipientId }, message: { text: messageText } },
+          { params: { access_token: token } }
+        );
+        console.log(`[7-Day Auto Reminder] Sent FB Messenger message to ${name} (${recipientId})`);
+        return true;
+      } catch (err) {
+        console.warn(`[Auto Reminder Error - Facebook]:`, err.response?.data || err.message);
+      }
+    }
+  }
+
+  // 3. WhatsApp (Default)
+  try {
+    await sendWhatsAppMessage(phone, 'weekly_nurture_followup', [name]);
+    console.log(`[7-Day Auto Reminder] Sent WhatsApp message to ${name} (${phone})`);
+    return true;
+  } catch (err) {
+    console.warn(`[Auto Reminder Error - WhatsApp]:`, err.message);
+  }
+  return false;
+}
+
+/**
+ * Execute 7-Day Auto Reminder Scan for all inactive leads and enquiries
+ */
+export async function execute7DayReminderScan() {
+  console.log('[7-Day Auto Reminder Scan] Executing scan for all inactive enquiries & leads...');
+  let sentCount = 0;
+  const now = new Date();
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+  try {
+    // 1. Scan LEADS table
+    const { data: leads } = await supabase.from('leads').select('*');
+    if (leads && leads.length > 0) {
+      for (const lead of leads) {
+        if (lead.status === 'Won' || lead.status === 'Lost') continue;
+        const lastDate = lead.last_contacted_at || lead.updated_at || lead.updatedAt || lead.created_at || lead.createdAt;
+        const lastTime = lastDate ? new Date(lastDate).getTime() : 0;
+        
+        if (now.getTime() - lastTime >= SEVEN_DAYS_MS) {
+          const sent = await sendAuto7DayReminder(lead);
+          if (sent) {
+            sentCount++;
+            await supabase.from('leads').update({
+              last_contacted_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              updatedAt: now.toISOString()
+            }).eq('id', lead.id);
+          }
+        }
+      }
+    }
+
+    // 2. Scan ENQUIRIES table
+    const { data: enquiries } = await supabase.from('enquiries').select('*');
+    if (enquiries && enquiries.length > 0) {
+      for (const enq of enquiries) {
+        if (enq.status === 'Closed' || enq.status === 'Converted') continue;
+        const lastDate = enq.last_contacted_at || enq.updated_at || enq.updatedAt || enq.created_at || enq.createdAt;
+        const lastTime = lastDate ? new Date(lastDate).getTime() : 0;
+
+        if (now.getTime() - lastTime >= SEVEN_DAYS_MS) {
+          const sent = await sendAuto7DayReminder(enq);
+          if (sent) {
+            sentCount++;
+            await supabase.from('enquiries').update({
+              last_contacted_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              updatedAt: now.toISOString()
+            }).eq('id', enq.id);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[7-Day Auto Reminder Scan Error]:', err.message);
+  }
+  console.log(`[7-Day Auto Reminder Scan Complete] Sent ${sentCount} reminders.`);
+  return { success: true, sentCount };
+}
+
 export const startCronJobs = () => {
   console.log('[Cron Scheduler] Initializing background automated messaging jobs...');
 
   /**
-   * 1. WEEKLY LEAD FOLLOW-UP
-   * Runs daily at 10:00 AM to check for leads that haven't been contacted in 7+ days.
+   * 1. WEEKLY LEAD & ENQUIRY FOLLOW-UP
+   * Runs daily at 10:00 AM to check for leads and enquiries that haven't been contacted in 7+ days.
    */
   cron.schedule('0 10 * * *', async () => {
-    console.log('[Cron Scheduler] Executing Weekly Lead Follow-up check...');
-    try {
-      const { data: leads, error } = await supabase
-        .from('leads')
-        .select('*')
-        .in('status', ['New', 'Contacted']);
-
-      if (error) throw error;
-
-      if (leads && leads.length > 0) {
-        const now = new Date();
-        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-
-        for (const lead of leads) {
-          const lastContactedDate = lead.last_contacted_at ? new Date(lead.last_contacted_at) : new Date(lead.created_at || now);
-          const timeSinceLastContact = now.getTime() - lastContactedDate.getTime();
-
-          // If it's been 7 days or more since the last contact
-          if (timeSinceLastContact >= SEVEN_DAYS_MS) {
-            
-            // 1. Send the WhatsApp Follow-up Message
-            await sendWhatsAppMessage(
-              lead.phone, 
-              'weekly_nurture_followup', 
-              [lead.contactName || 'there']
-            );
-            console.log(`[Automated Message] Sent weekly follow-up to ${lead.contactName}`);
-            
-            // 2. Update the DB so they don't get messaged again tomorrow
-            const { error: updateError } = await supabase
-              .from('leads')
-              .update({ last_contacted_at: now.toISOString() })
-              .eq('id', lead.id);
-
-            if (updateError) {
-              console.warn(`[Cron Warning] Failed to update last_contacted_at for lead ${lead.id}. Please ensure 'last_contacted_at' column exists in Supabase.`);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error('[Cron Error] Weekly Follow-up Failed:', err.message);
-    }
+    await execute7DayReminderScan();
   });
   
   cron.schedule('*/15 * * * *', async () => {
