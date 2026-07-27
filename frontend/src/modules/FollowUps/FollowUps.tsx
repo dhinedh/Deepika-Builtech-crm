@@ -12,12 +12,16 @@ import '../../components/UI/Modal.css';
 import './FollowUps.css';
 
 const FollowUps: React.FC = () => {
-  const { followUps, contacts } = useCRMStore();
+  const { followUps, contacts, leads } = useCRMStore();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const getContactName = (id: string) => {
-    return contacts.find(c => c.id === id)?.fullName || 'Unknown Client';
+  const getContactName = (id: string, fallbackName?: string) => {
+    const contact = contacts.find(c => c.id === id);
+    if (contact) return contact.fullName;
+    const lead = leads.find(l => l.id === id || l.phone === id);
+    if (lead) return lead.contactName;
+    return fallbackName || 'Client';
   };
 
   const overdueFollowUps = followUps.filter(f => f.status === 'Overdue' || (isPast(new Date(f.scheduledDate)) && !isToday(new Date(f.scheduledDate)) && f.status === 'Pending'));
@@ -67,7 +71,7 @@ const FollowUps: React.FC = () => {
                     <div className="card-left">
                       <div className="type-icon"><Phone size={18} /></div>
                       <div className="client-info">
-                        <h4>{getContactName(f.contactId)}</h4>
+                        <h4>{getContactName(f.contactId, (f as any).contactName)}</h4>
                         <p className="muted-text">{f.type} • Scheduled {format(new Date(f.scheduledDate), 'dd MMM, hh:mm a')}</p>
                       </div>
                     </div>
@@ -92,7 +96,7 @@ const FollowUps: React.FC = () => {
                     <div className="card-left">
                       <div className="type-icon info"><MessageSquare size={18} /></div>
                       <div className="client-info">
-                        <h4>{getContactName(f.contactId)}</h4>
+                        <h4>{getContactName(f.contactId, (f as any).contactName)}</h4>
                         <p className="muted-text">{f.type} • Today, {format(new Date(f.scheduledDate), 'hh:mm a')}</p>
                       </div>
                     </div>
