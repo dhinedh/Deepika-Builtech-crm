@@ -8,6 +8,17 @@ export const sampleCompanies: Company[] = [];
 
 export const sampleContacts: Contact[] = [
   {
+    "id": "con-ig-aravindhini",
+    "fullName": "Aravindhini Dinakar",
+    "designation": "Client / Enquirer",
+    "phone": "ig:aravindhini_dinakar",
+    "isDecisionMaker": true,
+    "type": "Client Active",
+    "city": "Redhills, Chennai",
+    "industry": "Construction / PEB",
+    "createdAt": "2026-07-27T18:49:00.000Z"
+  },
+  {
     "id": "con-ig-ghajaanan",
     "fullName": "Ghajaanan Jeyakumaran",
     "designation": "Client / Enquirer",
@@ -164,6 +175,24 @@ export const sampleContacts: Contact[] = [
 ];
 
 export const sampleLeads: Lead[] = [
+  {
+    "id": "lead-ig-aravindhini",
+    "contactName": "Aravindhini Dinakar",
+    "companyName": "",
+    "phone": "ig:aravindhini_dinakar",
+    "projectType": "PEB Warehouse",
+    "location": "Redhills, Chennai",
+    "landArea": "1.5 Acres (45,000-55,000 sq. ft.)",
+    "estimatedBudget": 75000000,
+    "timeline": "1-3 months",
+    "source": "Instagram DM",
+    "assignedTo": "u1",
+    "status": "Qualified",
+    "leadScore": 95,
+    "notes": "High-value PEB Warehouse lead via Instagram DM. Land: ~1.5 acres in Redhills, Chennai. Built-up area: 45,000-55,000 sq. ft. Timeline: 1-3 months.",
+    "createdAt": "2026-07-27T18:49:00.000Z",
+    "updatedAt": "2026-07-27T18:52:00.000Z"
+  },
   {
     "id": "lead-ig-ghajaanan",
     "contactName": "Ghajaanan Jeyakumaran",
@@ -420,6 +449,15 @@ export const sampleLeads: Lead[] = [
 ];
 
 export const sampleEnquiries: Enquiry[] = [
+  {
+    "id": "enq-ig-aravindhini",
+    "contactName": "Aravindhini Dinakar",
+    "phone": "ig:aravindhini_dinakar",
+    "lastMessage": "We own approximately 1.5 acres of land in Redhills, Chennai, and we're planning to develop a warehouse with a target built-up area of around 45,000-55,000 sq. ft.",
+    "status": "New",
+    "createdAt": "2026-07-27T18:49:00.000Z",
+    "updatedAt": "2026-07-27T18:52:00.000Z"
+  },
   {
     "id": "enq-ig-ghajaanan",
     "contactName": "Ghajaanan Jeyakumaran",
