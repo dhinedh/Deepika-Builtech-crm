@@ -21,6 +21,7 @@ import Settings from './modules/Settings/Settings';
 import Vendors from './modules/Vendors/Vendors';
 import SiteVisits from './modules/SiteVisits/SiteVisits';
 import Enquiries from './modules/Enquiries/Enquiries';
+import { useCRMStore } from './store/useCRMStore';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -78,6 +79,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App: React.FC = () => {
   useEffect(() => {
+    // Automatically fetch live database leads & enquiries on app startup
+    useCRMStore.getState().fetchLeads();
+    useCRMStore.getState().fetchEnquiries();
+
     // Asynchronously restore session if present without blocking initial page render
     supabase.auth.getSession()
       .then(({ data: { session } }) => {

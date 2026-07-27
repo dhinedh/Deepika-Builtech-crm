@@ -20,6 +20,66 @@ function getUserSession(id) {
 }
 
 /**
+ * Extract phone number from free-text message.
+ * Supports +44, +91, international and 10-15 digit phone numbers.
+ */
+function extractPhoneNumber(text) {
+  if (!text) return null;
+  const phoneRegex = /(?:\+?\d{1,4}[\s\.-]?)?\(?\d{2,5}\)?[\s\.-]?\d{3,5}[\s\.-]?\d{3,5}/g;
+  const matches = text.match(phoneRegex);
+  if (!matches) return null;
+
+  for (const match of matches) {
+    const cleaned = match.replace(/[\s\(\)\.-]/g, '');
+    if (cleaned.length >= 10 && cleaned.length <= 15) {
+      if (cleaned.startsWith('45000') || cleaned.startsWith('55000') || cleaned === '1234567890') continue;
+      return match.trim();
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract land area / built-up area from free-text message.
+ */
+function extractLandArea(text) {
+  if (!text) return null;
+  const areaPatterns = [
+    /(\d+(?:\.\d+)?\s*(?:acres?|acre|grounds?|sq\.?\s*ft\.?|sqft|square\s*feet|sq\s*meters))/i,
+    /(\d{2,3},\d{3}(?:\s*-\s*\d{2,3},\d{3})?\s*(?:sq\.?\s*ft\.?|sqft|square\s*feet))/i,
+    /(\d+\s*-\s*\d+\s*(?:sq\.?\s*ft\.?|sqft|square\s*feet|acres?))/i
+  ];
+
+  for (const pat of areaPatterns) {
+    const m = text.match(pat);
+    if (m && m[1]) return m[1].trim();
+  }
+  return null;
+}
+
+/**
+ * Extract site location from free-text message.
+ */
+function extractLocation(text) {
+  if (!text) return null;
+  const locations = [
+    'Redhills', 'Ambattur', 'Kanchipuram', 'Thirumullaivoyal', 'Thiruvallur',
+    'Chennai', 'Hosur', 'Coimbatore', 'Madurai', 'Trichy', 'Tiruchirappalli',
+    'Salem', 'Erode', 'Vellore', 'Tiruppur', 'Tuticorin', 'Thanjavur', 'Nagercoil',
+    'Pondicherry', 'Puducherry', 'Bangalore', 'Bengaluru', 'Tamil Nadu'
+  ];
+  const found = [];
+  for (const loc of locations) {
+    const reg = new RegExp(`\\b${loc}\\b`, 'i');
+    if (reg.test(text)) {
+      found.push(loc);
+    }
+  }
+  if (found.length > 0) return found.join(', ');
+  return null;
+}
+
+/**
  * Extract project type from free-text message.
  * Returns a ProjectType string or null if not detected.
  */
@@ -39,7 +99,6 @@ function extractProjectType(text) {
  * Returns a string or null if not detected.
  */
 function extractCompanyName(text) {
-  // Patterns: "from XYZ", "company: XYZ", "our company XYZ", "we are XYZ", "I am from XYZ"
   const patterns = [
     /(?:from|company[:\s]+|our company[:\s]+|we are[:\s]+|i am from[:\s]+|i'm from[:\s]+|i work (?:at|for)[:\s]+|representing[:\s]+)([A-Z][A-Za-z0-9 &.,'-]{2,40})/i,
     /(?:company name[:\s]+|firm[:\s]+|organisation[:\s]+|organization[:\s]+)([A-Z][A-Za-z0-9 &.,'-]{2,40})/i,
@@ -53,82 +112,109 @@ function extractCompanyName(text) {
 
 /**
  * Upsert a lead and enquiry record in the CRM DB when a chat message arrives.
- * Extracts any available info (project type, company name) from the message.
+ * Extracts any available info (project type, company name, phone, location, area) from the message.
  */
 async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messageText, sessionData = {} }) {
   try {
     const detectedProjectType = extractProjectType(messageText);
     const detectedCompany     = extractCompanyName(messageText);
+    const detectedPhone       = extractPhoneNumber(messageText);
+    const detectedArea        = extractLandArea(messageText);
+    const detectedLoc         = extractLocation(messageText);
     const source = platform === 'facebook' ? 'Facebook Messenger' : 'Instagram DM';
     const now    = new Date().toISOString();
+
+    const realPhone = detectedPhone || sessionData.real_phone || phoneIdentifier;
+    if (detectedPhone && !sessionData.real_phone) {
+      sessionData.real_phone = detectedPhone;
+    }
 
     // ---- LEADS table ----
     const { data: existingLeads } = await supabase
       .from('leads')
-      .select('id,projectType,companyName')
-      .eq('phone', phoneIdentifier);
+      .select('id,phone,projectType,companyName,location,landArea')
+      .or(`phone.eq.${phoneIdentifier},phone.eq.${realPhone}`);
 
     const lead = existingLeads && existingLeads.length > 0 ? existingLeads[0] : null;
 
     if (lead) {
-      // Only update fields that were previously unknown
-      const updates = { updated_at: now, lastMessage: messageText };
+      const updates = { 
+        updated_at: now, 
+        updatedAt: now,
+        notes: `Latest message: "${messageText.substring(0, 300)}"`
+      };
+      if (detectedPhone && lead.phone !== detectedPhone) {
+        updates.phone = detectedPhone;
+      }
       if (detectedProjectType && (!lead.projectType || lead.projectType === 'Not Mentioned')) {
         updates.projectType = detectedProjectType;
       }
       if (detectedCompany && !lead.companyName) {
         updates.companyName = detectedCompany;
       }
-      // Update from chatbot quiz answers
-      if (sessionData.site_location)     updates.location  = sessionData.site_location;
-      if (sessionData.area_required)     updates.landArea  = sessionData.area_required;
-      if (sessionData.project_timeline)  updates.timeline  = sessionData.project_timeline;
+      if (detectedArea && !lead.landArea) {
+        updates.landArea = detectedArea;
+      }
+      if (detectedLoc && !lead.location) {
+        updates.location = detectedLoc;
+      }
+      if (sessionData.site_location)    updates.location = sessionData.site_location;
+      if (sessionData.area_required)    updates.landArea = sessionData.area_required;
+      if (sessionData.project_timeline) updates.timeline = sessionData.project_timeline;
       if (sessionData.selected_service && sessionData.selected_service !== 'PEB / General Enquiry') {
         updates.projectType = sessionData.selected_service;
       }
 
-      await supabase.from('leads').update(updates).eq('phone', phoneIdentifier);
-      console.log(`[CRM Sync] Updated lead for ${customerName} (${phoneIdentifier})`);
+      await supabase.from('leads').update(updates).eq('id', lead.id);
+      console.log(`[CRM Sync] Updated lead for ${customerName} (${realPhone})`);
     } else {
-      // Create new lead record
+      const isRichInquiry = detectedProjectType && (detectedArea || detectedLoc);
+      const score = isRichInquiry ? 90 : 40;
+
       await supabase.from('leads').insert([{
         id:          `lead-${platform.slice(0,2)}-${Date.now()}`,
         contactName: customerName,
-        phone:       phoneIdentifier,
+        phone:       realPhone,
         companyName: detectedCompany || '',
-        projectType: detectedProjectType || 'Not Mentioned',
+        projectType: detectedProjectType || sessionData.selected_service || 'Not Mentioned',
         source,
-        status:      'New',
-        leadScore:   40,
-        location:    sessionData.site_location || '',
-        landArea:    sessionData.area_required || '',
+        status:      isRichInquiry ? 'Qualified' : 'New',
+        leadScore:   score,
+        location:    detectedLoc || sessionData.site_location || '',
+        landArea:    detectedArea || sessionData.area_required || '',
         timeline:    sessionData.project_timeline || 'To be confirmed',
-        notes:       `Captured via ${source}. First message: "${messageText.substring(0, 200)}"`,
+        notes:       `Captured via ${source}.\nFirst message: "${messageText.substring(0, 300)}"`,
+        createdAt:   now,
+        updatedAt:   now,
         created_at:  now,
         updated_at:  now
       }]);
-      console.log(`[CRM Sync] Created new lead for ${customerName} (${phoneIdentifier})`);
+      console.log(`[CRM Sync] Created new lead for ${customerName} (${realPhone})`);
     }
 
     // ---- ENQUIRIES table ----
     const { data: existingEnq } = await supabase
       .from('enquiries')
       .select('id')
-      .eq('phone', phoneIdentifier);
+      .or(`phone.eq.${phoneIdentifier},phone.eq.${realPhone}`);
 
     if (existingEnq && existingEnq.length > 0) {
       await supabase.from('enquiries').update({
+        phone:       realPhone,
         lastMessage: messageText.substring(0, 500),
-        updated_at:  now
-      }).eq('phone', phoneIdentifier);
+        updated_at:  now,
+        updatedAt:   now
+      }).eq('id', existingEnq[0].id);
     } else {
       await supabase.from('enquiries').insert([{
         id:          `enq-${platform.slice(0,2)}-${Date.now()}`,
         contactName: customerName,
-        phone:       phoneIdentifier,
+        phone:       realPhone,
         lastMessage: messageText.substring(0, 500),
         source,
         status:      'New',
+        createdAt:   now,
+        updatedAt:   now,
         created_at:  now,
         updated_at:  now
       }]);
@@ -138,18 +224,21 @@ async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messag
     const { data: existingContacts } = await supabase
       .from('contacts')
       .select('id')
-      .eq('phone', phoneIdentifier);
+      .or(`phone.eq.${phoneIdentifier},phone.eq.${realPhone}`);
 
     if (!existingContacts || existingContacts.length === 0) {
       await supabase.from('contacts').insert([{
         id:             `con-${platform.slice(0,2)}-${Date.now()}`,
         fullName:       customerName,
-        phone:          phoneIdentifier,
+        phone:          realPhone,
         designation:    'Client / Enquirer',
         isDecisionMaker: true,
         type:           'Client Active',
         industry:       'Construction / PEB',
-        created_at:     now
+        createdAt:      now,
+        updatedAt:      now,
+        created_at:     now,
+        updated_at:     now
       }]);
     }
 
@@ -330,6 +419,35 @@ async function handleMetaChatbot(senderId, recipientId, platform, messageText, c
 
   const msg = messageText.trim();
   const msgLower = msg.toLowerCase();
+
+  // 1. Auto-detect Phone Number in free-text
+  const extractedPhone = extractPhoneNumber(messageText);
+  if (extractedPhone) {
+    session.is_paused = true;
+    session.real_phone = extractedPhone;
+    await syncCRMFromChat({ phoneIdentifier, customerName, platform, messageText, sessionData: session });
+    await sendMetaChatMessage(senderId, recipientId, platform, `✅ *Thank you, ${customerName}!*\n\nWe have received your contact number (*${extractedPhone}*).\nOur engineering and sales team will reach out to you directly on WhatsApp / phone shortly to discuss your project details.\n\n📞 *Direct Helpline:* +91 96000 67611 / +91 98844 87938\n🌐 *Website:* deepikabuiltech.com`);
+    return;
+  }
+
+  // 2. Auto-detect Rich Detailed Requirements (Bypass generic menu if details already given!)
+  const detectedProjectType = extractProjectType(messageText);
+  const detectedArea        = extractLandArea(messageText);
+  const detectedLoc         = extractLocation(messageText);
+
+  if (detectedProjectType && (detectedArea || detectedLoc) && session.quote_step === 0 && !session.has_submitted_rich_enquiry) {
+    session.has_submitted_rich_enquiry = true;
+    session.selected_service = detectedProjectType;
+    if (detectedArea) session.area_required = detectedArea;
+    if (detectedLoc)  session.site_location = detectedLoc;
+
+    await syncCRMFromChat({ phoneIdentifier, customerName, platform, messageText, sessionData: session });
+
+    const ackMessage = `🏗️ *Thank you for your detailed requirement, ${customerName}!*\n\nWe have registered your project inquiry:\n━━━━━━━━━━━━━━━━━\n🔧 *Service:* ${detectedProjectType}\n📐 *Area:* ${detectedArea || 'As specified'}\n📍 *Location:* ${detectedLoc || 'As specified'}\n━━━━━━━━━━━━━━━━━\n\n📱 *Please share your Mobile / WhatsApp number* so our engineering team can share layout ideas and a cost estimate with you!`;
+    
+    await sendMetaChatMessage(senderId, recipientId, platform, ackMessage);
+    return;
+  }
 
   // Human Takeover check
   if (msgLower === "5" || msgLower === "btn_human" || msgLower.includes("human") || msgLower.includes("agent") || msgLower.includes("talk to someone")) {

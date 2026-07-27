@@ -3,6 +3,26 @@
   "crmData": {},
   "leads": [
     {
+      "id": "lead-ig-ghajaanan",
+      "contactName": "Ghajaanan Jeyakumaran",
+      "companyName": "",
+      "phone": "+4407448025707",
+      "projectType": "PEB Warehouse",
+      "location": "Redhills, Chennai",
+      "landArea": "1.5 Acres (45,000-55,000 sq. ft.)",
+      "estimatedBudget": 75000000,
+      "timeline": "1–3 months",
+      "source": "Instagram DM",
+      "assignedTo": "u1",
+      "status": "Qualified",
+      "leadScore": 95,
+      "notes": "High-value enquiry via Instagram DM. Owns ~1.5 acres in Redhills, Chennai. Planning 45,000-55,000 sq ft warehouse. WhatsApp provided: +4407448025707.",
+      "createdAt": "2026-07-27T16:57:00.000Z",
+      "updatedAt": "2026-07-27T17:25:00.000Z",
+      "created_at": "2026-07-27T16:57:00.000Z",
+      "updated_at": "2026-07-27T17:25:00.000Z"
+    },
+    {
       "id": "lead-fb-1",
       "contactName": "Ramya R",
       "companyName": "",
