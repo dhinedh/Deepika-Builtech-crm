@@ -8,6 +8,17 @@ export const sampleCompanies: Company[] = [];
 
 export const sampleContacts: Contact[] = [
   {
+    "id": "con-ig-ghajaanan",
+    "fullName": "Ghajaanan Jeyakumaran",
+    "designation": "Client / Enquirer",
+    "phone": "+4407448025707",
+    "isDecisionMaker": true,
+    "type": "Client Active",
+    "city": "Redhills, Chennai",
+    "industry": "Construction / PEB",
+    "createdAt": "2026-07-27T16:57:00.000Z"
+  },
+  {
     "id": "con-fb-1",
     "fullName": "Ramya R",
     "designation": "Client / Enquirer",
@@ -409,6 +420,15 @@ export const sampleLeads: Lead[] = [
 ];
 
 export const sampleEnquiries: Enquiry[] = [
+  {
+    "id": "enq-ig-ghajaanan",
+    "contactName": "Ghajaanan Jeyakumaran",
+    "phone": "+4407448025707",
+    "lastMessage": "Hi, Yes sure, WhatsApp me on +4407448025707",
+    "status": "New",
+    "createdAt": "2026-07-27T16:57:00.000Z",
+    "updatedAt": "2026-07-27T17:25:00.000Z"
+  },
   {
     "id": "enq-fb-001",
     "contactName": "Ramya R",
