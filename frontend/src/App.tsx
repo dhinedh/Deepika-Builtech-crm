@@ -79,14 +79,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App: React.FC = () => {
   useEffect(() => {
-    // Automatically fetch live database leads & enquiries on app startup
+    // Automatically fetch live database leads, enquiries & contacts on app startup
     useCRMStore.getState().fetchLeads();
     useCRMStore.getState().fetchEnquiries();
+    if (useCRMStore.getState().fetchContacts) useCRMStore.getState().fetchContacts();
 
     // Auto-poll live database every 10 seconds so new incoming leads appear automatically
     const pollInterval = setInterval(() => {
       useCRMStore.getState().fetchLeads();
       useCRMStore.getState().fetchEnquiries();
+      if (useCRMStore.getState().fetchContacts) useCRMStore.getState().fetchContacts();
     }, 10000);
 
     // Asynchronously restore session if present without blocking initial page render

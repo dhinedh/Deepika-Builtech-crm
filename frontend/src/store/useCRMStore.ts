@@ -28,6 +28,7 @@ interface CRMState {
   fetchLeads: () => Promise<void>;
   fetchEnquiries: () => Promise<void>;
   fetchFollowUps: () => Promise<void>;
+  fetchContacts: () => Promise<void>;
   setLeads: (leads: Lead[]) => void;
   addLead: (lead: Lead) => Promise<void>;
   updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
@@ -156,6 +157,50 @@ export const useCRMStore = create<CRMState>()(
           }
         } catch (err) {
           console.error('Failed to fetch followups from backend:', err);
+        }
+      },
+
+      fetchContacts: async () => {
+        try {
+          const res = await secureFetch('/contacts');
+          let apiContacts: Contact[] = [];
+          if (res?.success && Array.isArray(res.data)) {
+            apiContacts = res.data.map((c: any) => ({
+              id: c.id,
+              fullName: c.fullName || c.full_name || c.contactName || 'Client',
+              designation: c.designation || 'Client / Enquirer',
+              phone: c.phone || '',
+              isDecisionMaker: c.isDecisionMaker !== false,
+              type: c.type || 'Client Active',
+              city: c.city || c.location || 'Chennai / Tamil Nadu',
+              industry: c.industry || 'Construction / PEB',
+              createdAt: c.createdAt || c.created_at || new Date().toISOString()
+            }));
+          }
+
+          // Dynamically derive contacts from all active leads so every lead automatically appears on Contacts Page
+          const currentLeads = (useCRMStore.getState ? useCRMStore.getState().leads : []) || [];
+          const derivedContacts: Contact[] = currentLeads.map(l => ({
+            id: `con-${l.id}`,
+            fullName: l.contactName,
+            designation: 'Client / Enquirer',
+            phone: l.phone,
+            isDecisionMaker: true,
+            type: 'Client Active',
+            city: l.location || 'Chennai / Tamil Nadu',
+            industry: 'Construction / PEB',
+            createdAt: l.createdAt || new Date().toISOString()
+          }));
+
+          const combined = [...apiContacts];
+          for (const d of derivedContacts) {
+            if (!combined.some(c => (c.phone && d.phone && c.phone === d.phone) || (c.fullName && d.fullName && c.fullName.toLowerCase() === d.fullName.toLowerCase()))) {
+              combined.unshift(d);
+            }
+          }
+          set({ contacts: combined.length > 0 ? combined : sampleContacts });
+        } catch (err) {
+          console.error('Failed to fetch contacts from backend:', err);
         }
       },
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCRMStore } from '../../store/useCRMStore';
 import { Plus, Search, Mail, Phone, Building2, Eye, Edit2 } from 'lucide-react';
 import Modal from '../../components/UI/Modal';
@@ -8,9 +8,13 @@ import '../../components/UI/Modal.css';
 import type { Contact } from '../../types';
 
 const Contacts: React.FC = () => {
-  const { contacts } = useCRMStore();
+  const { contacts, fetchContacts } = useCRMStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | undefined>(undefined);
+
+  useEffect(() => {
+    if (fetchContacts) fetchContacts();
+  }, []);
 
   return (
     <div className="contacts-module">
