@@ -4,10 +4,12 @@ import fs from 'fs';
 import path from 'path';
 import { supabase } from '../config/supabase.js';
 import { sendFollowUpLead, sendDirectWhatsAppText } from '../whatsappService.js';
+import { flushServerCache } from '../middleware/cacheMiddleware.js';
 
 // Direct local db.json writer for guaranteed fallback on Supabase errors
 function writeLeadToLocalDb(newLead) {
   try {
+    flushServerCache();
     const dbPath = path.resolve('db.json');
     const raw = fs.existsSync(dbPath) ? fs.readFileSync(dbPath, 'utf8') : '{}';
     const db = JSON.parse(raw);

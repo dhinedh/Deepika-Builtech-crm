@@ -9,8 +9,9 @@ const cache = new NodeCache({ stdTTL: 300, checkperiod: 320 });
  * drastically reducing database load and improving response times to ~1ms.
  */
 export const cacheMiddleware = (req, res, next) => {
-  // Only cache GET requests
-  if (req.method !== 'GET') {
+  // Only cache GET requests, and skip caching for real-time live data endpoints
+  const url = req.originalUrl || req.url || '';
+  if (req.method !== 'GET' || url.includes('/leads') || url.includes('/enquiries') || url.includes('/contacts')) {
     return next();
   }
 
@@ -35,13 +36,14 @@ export const cacheMiddleware = (req, res, next) => {
   }
 };
 
-/**
- * Utility to clear cache when data is modified (POST/PUT/DELETE)
- */
+export const flushServerCache = () => {
+  try {
+    cache.flushAll();
+  } catch (e) {}
+};
+
 export const clearCache = (req, res, next) => {
   if (req.method !== 'GET') {
-    // A blunt approach: clear all cache for this user/route prefix
-    // In production, you'd target specific keys
     cache.flushAll(); 
   }
   next();
