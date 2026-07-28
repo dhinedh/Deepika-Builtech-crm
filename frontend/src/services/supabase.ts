@@ -242,6 +242,20 @@ const authProxy = {
   }
 };
 
+function createDummyBuilder() {
+  const dummyBuilder: any = {
+    select: () => dummyBuilder,
+    eq: () => dummyBuilder,
+    order: () => dummyBuilder,
+    single: () => dummyBuilder,
+    insert: () => dummyBuilder,
+    update: () => dummyBuilder,
+    delete: () => dummyBuilder,
+    then: (resolve: any) => resolve({ data: [], error: null })
+  };
+  return dummyBuilder;
+}
+
 export const supabase = new Proxy(realClient, {
   get(target, prop) {
     if (prop === 'auth') {
@@ -254,6 +268,12 @@ export const supabase = new Proxy(realClient, {
         }
       });
     }
+    if (prop === 'from') {
+      if (isPlaceholderUrl) {
+        return () => createDummyBuilder();
+      }
+    }
     return (target as any)[prop];
   }
 });
+
