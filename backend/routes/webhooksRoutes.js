@@ -276,7 +276,11 @@ router.all('/whatsapp-bot-lead', async (req, res) => {
         .map(n => n.trim().replace(/\D/g, ''))
         .filter(Boolean);
 
-      const alertMsg = `🔔 *NEW FREE QUOTATION REQUEST — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${CustomerName || defaultName}\n📱 *Phone/Handle:* ${finalPhone}\n🔧 *Service:* ${ServiceSelected || 'PEB Warehouse'}\n📐 *Area Required:* ${AreaRequired || 'Not specified'}\n📍 *Site Location:* ${SiteLocation || 'Not specified'}\n📅 *Timeline:* ${Timeline || 'Not specified'}\n💰 *Budget Range:* ${BudgetRange || 'Not specified'}\n⏰ *Received:* ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Check CRM & call client back*`;
+      const now = new Date();
+      const callBackTime = new Date(now.getTime() + 2 * 60 * 60 * 1000).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+      const timeReceived = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+      const alertMsg = `🔔 *NEW FREE QUOTATION REQUEST — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${CustomerName || defaultName}\n📱 *Phone/Handle:* ${finalPhone}\n🔧 *Service:* ${ServiceSelected || 'PEB Warehouse'}\n📐 *Area Required:* ${AreaRequired || 'Not specified'}\n📍 *Site Location:* ${SiteLocation || 'Not specified'}\n📅 *Timeline:* ${Timeline || 'Not specified'}\n💰 *Budget Range:* ${BudgetRange || 'Not specified'}\n\n📊 *Lead Score:* ${payload.LeadScore || 85} (🔥 High Priority)\n🏷️ *Lead Status:* Quotation Requested\n⏰ *Received:* ${timeReceived}\n📞 *Call-Back Target:* Call by ${callBackTime} (within 2 hours)\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Review layout & call client back*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
 
       for (const num of salesNumbers) {
         sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Alert Error] Failed sending to ${num}:`, e.message));
