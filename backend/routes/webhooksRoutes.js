@@ -268,7 +268,22 @@ router.all('/whatsapp-bot-lead', async (req, res) => {
     }
 
     writeLeadToLocalDb(leadPayload);
-    res.status(201).json({ success: true, message: 'Lead saved to MongoDB Atlas' });
+
+    // Send WhatsApp notification alert to sales team
+    if (hasQuoteDetails) {
+      const salesNumbers = (process.env.NOTIFICATION_WHATSAPP_NUMBERS || '919342400879,919600067611,919884487938')
+        .split(',')
+        .map(n => n.trim().replace(/\D/g, ''))
+        .filter(Boolean);
+
+      const alertMsg = `🔔 *NEW FREE QUOTATION REQUEST — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${CustomerName || defaultName}\n📱 *Phone/Handle:* ${finalPhone}\n🔧 *Service:* ${ServiceSelected || 'PEB Warehouse'}\n📐 *Area Required:* ${AreaRequired || 'Not specified'}\n📍 *Site Location:* ${SiteLocation || 'Not specified'}\n📅 *Timeline:* ${Timeline || 'Not specified'}\n💰 *Budget Range:* ${BudgetRange || 'Not specified'}\n⏰ *Received:* ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Check CRM & call client back*`;
+
+      for (const num of salesNumbers) {
+        sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Alert Error] Failed sending to ${num}:`, e.message));
+      }
+    }
+
+    res.status(201).json({ success: true, message: 'Lead saved to MongoDB Atlas & Sales team alerted!' });
 
   } catch (err) {
     console.error('[WhatsApp Bot Webhook Error]:', err);
