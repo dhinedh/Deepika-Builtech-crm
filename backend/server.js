@@ -85,6 +85,9 @@ app.use('/api/', clearCache);
 // ================================================================= //
 
 // Public Routes
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
 app.get('/api/status', (req, res) => {
   res.json({ message: 'Backend is running securely and connected!', status: 'success' });
 });

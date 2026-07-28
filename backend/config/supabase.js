@@ -171,7 +171,7 @@ function wrapSupabaseBuilder(builderInstance, tableName, actionInfo = { action: 
       if (prop === 'then') {
         return function(resolve, reject) {
           return value.call(target, (response) => {
-            if (response && response.error && (response.error.message.includes('fetch failed') || response.error.message.includes('ENOTFOUND'))) {
+            if (response && response.error) {
               console.warn(`[Supabase Proxy] Database connection failed. Replaying '${actionInfo.action}' on local db.json table: ${tableName}`);
               
               // Build dynamic local query replaying all builder steps
