@@ -109,16 +109,6 @@
       "source": "WhatsApp Bot",
       "created_at": "2026-07-28T04:10:48.463Z",
       "updated_at": "2026-07-28T04:10:48.463Z"
-    },
-    {
-      "id": "enq-6a682c57ded7fbd8e375bd5a",
-      "contactName": "Karthik Raja",
-      "phone": "919876512345",
-      "lastMessage": "👋 *Hello Karthik Raja from Deepika Builtech Engineering!*\n\nThank you for reaching out regarding your requirement for *PEB Warehouse* in *Sriperumbudur*! 🏗️\n\nWe are Tamil Nadu's leading Pre-Engineered Building (PEB) specialists. Our team is ready to assist you with free layout designs and cost estimation.\n\n📞 Sales Support: +91 93424 00879 / +91 96000 67611\n🌐 Website: deepikabuiltech.com\n\nReply to this message anytime to connect with our engineers!",
-      "status": "New",
-      "source": "WhatsApp Bot",
-      "created_at": "2026-07-28T04:31:18.025Z",
-      "updated_at": "2026-07-28T04:31:18.025Z"
     }
   ],
   "leads": [
@@ -297,22 +287,6 @@
       "notes": "Captured from Chatbot.\nBudget: Not confirmed",
       "created_at": "2026-07-28T04:10:48.463Z",
       "updated_at": "2026-07-28T04:10:48.463Z"
-    },
-    {
-      "id": "lead-6a682c57ded7fbd8e375bd5a",
-      "contactName": "Karthik Raja",
-      "phone": "919876512345",
-      "projectType": "PEB Warehouse",
-      "location": "Sriperumbudur",
-      "landArea": "",
-      "timeline": "Immediate",
-      "estimatedBudget": 50,
-      "status": "New",
-      "leadScore": 80,
-      "source": "WhatsApp Bot",
-      "notes": "Captured from Chatbot.\nBudget: Not confirmed",
-      "created_at": "2026-07-28T04:31:18.025Z",
-      "updated_at": "2026-07-28T04:31:18.025Z"
     }
   ],
   "contacts": [],
@@ -429,16 +403,6 @@
       "scheduled_date": "2026-07-28T04:10:48.463Z",
       "status": "Completed",
       "notes": "Automated follow-up logged for Dhinesh Kumar (919840198765)"
-    },
-    {
-      "id": "fol-6a682c57ded7fbd8e375bd5a",
-      "lead_id": "lead-6a682c57ded7fbd8e375bd5a",
-      "contactName": "Karthik Raja",
-      "WhatsAppNumber": "919876512345",
-      "type": "WhatsApp Bot",
-      "scheduled_date": "2026-07-28T04:31:18.025Z",
-      "status": "Completed",
-      "notes": "Automated follow-up logged for Karthik Raja (919876512345)"
     }
   ]
 }
