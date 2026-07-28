@@ -99,3 +99,42 @@ export const sendOmniChannelMessage = async (
   // Default to WhatsApp
   await sendWhatsAppMessage(lead.phone, targetName, messageType, extraParams);
 };
+
+const HANDLE_MAP: Record<string, string> = {
+  'ig:1015258211319714': '@wiinnniiieeee',
+  'ig:sarath_kumar': '@sarath_kumar',
+  'ig:1784299935924157': '@ghajaananjeyakumaran',
+  'ig:1563709022151825': '@mr.sarath_kumar2528',
+  'ig:1002343049293338': '@arostarblr',
+  'ig:1098190455872049': '@griezzmusic',
+  'ig:1356848385907899': '@kamalesh_alittlejohn',
+  'ig:3535665503265080': '@svkcse1985',
+  'ig:1622146982672826': '@jerome_jackxly',
+  '919342400879': '+91 93424 00879 (Admin Verification)',
+  '919840198765': '+91 98401 98765 (WhatsApp)',
+  '919876512345': '+91 98765 12345 (WhatsApp)'
+};
+
+export function formatContactSubtitle(phone: string): string {
+  if (!phone) return '';
+  if (HANDLE_MAP[phone]) return HANDLE_MAP[phone];
+
+  if (phone.startsWith('ig:')) {
+    const handle = phone.replace(/^ig:/, '');
+    return handle.startsWith('@') ? handle : `@${handle}`;
+  }
+  if (phone.startsWith('fb:')) {
+    const handle = phone.replace(/^fb:/, '');
+    return `FB: ${handle}`;
+  }
+
+  const clean = phone.replace(/\D/g, '');
+  if (clean.length === 12 && clean.startsWith('91')) {
+    return `+91 ${clean.slice(2, 7)} ${clean.slice(7)}`;
+  }
+  if (clean.length === 10) {
+    return `+91 ${clean.slice(0, 5)} ${clean.slice(5)}`;
+  }
+  return phone;
+}
+

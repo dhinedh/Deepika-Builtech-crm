@@ -8,7 +8,9 @@ import { format } from 'date-fns';
 import Modal from '../../components/UI/Modal';
 import { LeadForm } from '../Leads/LeadForm';
 import { secureFetch } from '../../services/api';
+import { formatContactSubtitle } from '../../utils/whatsapp';
 import './Enquiries.css';
+
 
 const Enquiries: React.FC = () => {
   const { enquiries, fetchEnquiries } = useCRMStore();
@@ -142,7 +144,7 @@ const Enquiries: React.FC = () => {
                       <span className="font-600">{item.contactName}</span>
                     </div>
                   </td>
-                  <td><span className="phone-badge">{item.phone}</span></td>
+                  <td><span className="phone-badge">{formatContactSubtitle(item.phone)}</span></td>
                   <td className="message-cell">
                     <p className="message-text" title={item.lastMessage}>
                       {item.lastMessage || <span className="muted-text">Empty message / Media sent</span>}

@@ -12,9 +12,11 @@ import './Leads.css';
 import Modal from '../../components/UI/Modal';
 import { LeadForm } from './LeadForm';
 import '../../components/UI/Modal.css';
+import { formatContactSubtitle } from '../../utils/whatsapp';
 import type { Lead } from '../../types/index.ts';
 
 const Leads: React.FC = () => {
+
   const { leads, updateLead, fetchLeads } = useCRMStore();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -101,7 +103,7 @@ const Leads: React.FC = () => {
                 <td>
                   <div className="flex flex-col">
                     <span className="font-600">{lead.contactName}</span>
-                    <span className="muted-text">{lead.phone}</span>
+                    <span className="muted-text">{formatContactSubtitle(lead.phone)}</span>
                   </div>
                 </td>
                 <td>{lead.companyName}</td>

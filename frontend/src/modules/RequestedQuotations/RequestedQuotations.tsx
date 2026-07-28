@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useCRMStore } from '../../store/useCRMStore';
 import { format } from 'date-fns';
+import { formatContactSubtitle } from '../../utils/whatsapp';
 
 export const RequestedQuotations: React.FC = () => {
   const { leads, enquiries, fetchLeads, fetchEnquiries } = useCRMStore();
@@ -166,7 +167,7 @@ Our engineering team has reviewed your details and is ready to share customized 
                     <h3 className="font-bold text-gray-900 text-lg flex items-center gap-1.5">
                       <User size={18} className="text-emerald-600" /> {req.contactName}
                     </h3>
-                    <p className="text-xs text-gray-500 mt-0.5">{req.phone}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{formatContactSubtitle(req.phone)}</p>
                   </div>
                   <span className="bg-emerald-100 text-emerald-800 text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border border-emerald-300">
                     Score: {req.leadScore}/100
