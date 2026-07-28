@@ -40,7 +40,7 @@ export const connectDB = async () => {
 
         if (fileDb.leads && Array.isArray(fileDb.leads)) {
           for (const item of fileDb.leads) {
-            const query = item.id ? { $or: [{ id: item.id }, { phone: item.phone }] } : { phone: item.phone };
+            const query = item.contactName ? { contactName: item.contactName } : item.id ? { id: item.id } : { phone: item.phone };
             const existing = await Lead.findOne(query);
             if (!existing) {
               await Lead.create(item);
@@ -50,7 +50,7 @@ export const connectDB = async () => {
 
         if (fileDb.enquiries && Array.isArray(fileDb.enquiries)) {
           for (const item of fileDb.enquiries) {
-            const query = item.id ? { $or: [{ id: item.id }, { phone: item.phone }] } : { phone: item.phone };
+            const query = item.contactName ? { contactName: item.contactName } : item.id ? { id: item.id } : { phone: item.phone };
             const existing = await Enquiry.findOne(query);
             if (!existing) {
               await Enquiry.create(item);

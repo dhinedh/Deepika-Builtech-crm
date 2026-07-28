@@ -151,60 +151,60 @@ Reply to this message anytime to connect with our specialists!`;
       <div className="filter-tabs flex gap-2 border-b border-gray-200 mb-6 overflow-x-auto pb-2">
         <button
           onClick={() => setActiveTab('3days_due')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border whitespace-nowrap flex-shrink-0 ${
             activeTab === '3days_due'
               ? 'bg-amber-50 text-amber-900 border-amber-400 shadow-sm'
               : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
           }`}
         >
-          <Clock size={16} className="text-amber-600" />
-          ⚡ 3-Day Follow-Up Due
-          <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+          <Clock size={16} className="text-amber-600 flex-shrink-0" />
+          <span>⚡ 3-Day Follow-Up Due</span>
+          <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-bold ml-1 flex-shrink-0">
             {threeDaysDueEnquiries.length + threeDaysDueLeads.length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab('today')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border whitespace-nowrap flex-shrink-0 ${
             activeTab === 'today'
               ? 'bg-blue-50 text-blue-900 border-blue-400 shadow-sm'
               : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
           }`}
         >
-          <CalendarIcon size={16} className="text-blue-600" />
-          Today's Schedule
-          <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+          <CalendarIcon size={16} className="text-blue-600 flex-shrink-0" />
+          <span>Today's Schedule</span>
+          <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-bold ml-1 flex-shrink-0">
             {todayFollowUps.length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab('overdue')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border whitespace-nowrap flex-shrink-0 ${
             activeTab === 'overdue'
               ? 'bg-red-50 text-red-900 border-red-400 shadow-sm'
               : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
           }`}
         >
-          <AlertTriangle size={16} className="text-red-600" />
-          Overdue
-          <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+          <AlertTriangle size={16} className="text-red-600 flex-shrink-0" />
+          <span>Overdue</span>
+          <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full font-bold ml-1 flex-shrink-0">
             {overdueFollowUps.length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab('all')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border whitespace-nowrap flex-shrink-0 ${
             activeTab === 'all'
               ? 'bg-emerald-50 text-emerald-900 border-emerald-400 shadow-sm'
               : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
           }`}
         >
-          <Filter size={16} className="text-emerald-600" />
-          All Follow-ups
-          <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+          <Filter size={16} className="text-emerald-600 flex-shrink-0" />
+          <span>All Follow-ups</span>
+          <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full font-bold ml-1 flex-shrink-0">
             {followUps.length}
           </span>
         </button>
@@ -216,16 +216,16 @@ Reply to this message anytime to connect with our specialists!`;
           {/* TAB 1: 3-DAY FOLLOW-UP DUE ENQUIRIES (SENT 3+ DAYS AGO) */}
           {(activeTab === '3days_due' || activeTab === 'all') && (
             <div className="bg-white rounded-xl shadow-sm border border-amber-200/80 p-5">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-amber-900 flex items-center gap-2">
-                    <Clock className="text-amber-600" /> Enquiries Needing Follow-Up (Message Sent 3+ Days Ago)
+                    <Clock className="text-amber-600 flex-shrink-0" /> Enquiries Needing Follow-Up (Message Sent 3+ Days Ago)
                   </h3>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     Clients who received their last message or initial enquiry 3 or more days ago and are due for a nurture check-in
                   </p>
                 </div>
-                <span className="bg-amber-100 text-amber-900 font-bold px-3 py-1 rounded-full text-xs border border-amber-300">
+                <span className="bg-amber-100 text-amber-900 font-bold px-3 py-1 rounded-full text-xs border border-amber-300 whitespace-nowrap flex-shrink-0 self-start sm:self-auto">
                   {threeDaysDueEnquiries.length + threeDaysDueLeads.length} Clients Due
                 </span>
               </div>
@@ -245,7 +245,7 @@ Reply to this message anytime to connect with our specialists!`;
                               <h4 className="font-bold text-gray-900 text-base">{enq.contactName}</h4>
                               <p className="text-xs text-gray-500">{enq.phone}</p>
                             </div>
-                            <span className={`text-[0.65rem] px-2.5 py-0.5 rounded-full font-bold border ${badge.bg}`}>
+                            <span className={`text-[0.65rem] px-2.5 py-0.5 rounded-full font-bold border whitespace-nowrap flex-shrink-0 ${badge.bg}`}>
                               {badge.label}
                             </span>
                           </div>
@@ -289,7 +289,7 @@ Reply to this message anytime to connect with our specialists!`;
                               <h4 className="font-bold text-gray-900 text-base">{lead.contactName}</h4>
                               <p className="text-xs text-gray-500">{lead.phone} • {lead.projectType}</p>
                             </div>
-                            <span className={`text-[0.65rem] px-2.5 py-0.5 rounded-full font-bold border ${badge.bg}`}>
+                            <span className={`text-[0.65rem] px-2.5 py-0.5 rounded-full font-bold border whitespace-nowrap flex-shrink-0 ${badge.bg}`}>
                               {badge.label}
                             </span>
                           </div>
@@ -333,11 +333,11 @@ Reply to this message anytime to connect with our specialists!`;
           {/* TAB 2: OVERDUE FOLLOW-UPS */}
           {(activeTab === 'overdue' || activeTab === 'all') && overdueFollowUps.length > 0 && (
             <div className="overdue-section bg-white rounded-xl shadow-sm border border-red-200 p-5">
-              <div className="section-header flex justify-between items-center mb-4">
+              <div className="section-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <h3 className="text-lg font-bold text-red-900 flex items-center gap-2">
-                  <AlertTriangle className="text-red-600" /> Overdue Scheduled Follow-ups
+                  <AlertTriangle className="text-red-600 flex-shrink-0" /> Overdue Scheduled Follow-ups
                 </h3>
-                <span className="badge bg-red-100 text-red-800 border border-red-300 font-bold px-3 py-1 rounded-full text-xs">
+                <span className="badge bg-red-100 text-red-800 border border-red-300 font-bold px-3 py-1 rounded-full text-xs whitespace-nowrap flex-shrink-0 self-start sm:self-auto">
                   {overdueFollowUps.length} Overdue
                 </span>
               </div>

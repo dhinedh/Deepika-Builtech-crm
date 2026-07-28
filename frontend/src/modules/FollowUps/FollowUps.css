@@ -135,6 +135,25 @@
   color: var(--muted-text);
 }
 
+.filter-tabs {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.filter-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filter-tabs::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
 @media (max-width: 768px) {
   .followup-card {
     flex-direction: column;
@@ -159,4 +178,5 @@
     min-width: 600px;
   }
 }
+
 

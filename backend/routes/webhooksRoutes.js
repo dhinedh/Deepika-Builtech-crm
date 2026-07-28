@@ -2,11 +2,11 @@ import express from 'express';
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
-import { supabase } from '../config/supabase.js';
+import { Lead, Enquiry, Contact, FollowUp } from '../config/mongodb.js';
 import { sendFollowUpLead, sendDirectWhatsAppText } from '../whatsappService.js';
 import { flushServerCache } from '../middleware/cacheMiddleware.js';
 
-// Direct local db.json writer for guaranteed fallback on Supabase errors
+// Direct local db.json writer for guaranteed fallback on DB errors
 function writeLeadToLocalDb(newLead) {
   try {
     flushServerCache();
@@ -14,7 +14,6 @@ function writeLeadToLocalDb(newLead) {
     const raw = fs.existsSync(dbPath) ? fs.readFileSync(dbPath, 'utf8') : '{}';
     const db = JSON.parse(raw);
     if (!db.leads) db.leads = [];
-    // Avoid duplicate phone entries
     const exists = db.leads.find(l => l.phone === newLead.phone);
     if (exists) {
       Object.assign(exists, newLead, { updated_at: new Date().toISOString() });
@@ -35,7 +34,6 @@ function writeLeadToLocalDb(newLead) {
 }
 
 const router = express.Router();
-
 
 /**
  * Helper to fetch Facebook/Instagram user profile name using Page/IG access token
@@ -116,18 +114,9 @@ router.post('/meta', async (req, res) => {
           const messageText = msg.text?.body?.toLowerCase() || '';
           
           // 1. FILTER: Check if this person is already in the CRM
-          const { data: existingLeads } = await supabase
-            .from('leads')
-            .select('id')
-            .eq('phone', phone);
-            
-          const { data: existingContacts } = await supabase
-            .from('contacts')
-            .select('id')
-            .eq('phone', phone);
-
-          const isExisting = (existingLeads && existingLeads.length > 0) || 
-                             (existingContacts && existingContacts.length > 0);
+          const existingLead = await Lead.findOne({ phone });
+          const existingContact = await Contact.findOne({ phone });
+          const isExisting = !!existingLead || !!existingContact;
 
           if (isExisting) {
             console.log(`[WhatsApp Filter] Message ignored - ${phone} is already an active Lead/Contact.`);
@@ -149,17 +138,9 @@ router.post('/meta', async (req, res) => {
                 notes: `Initial Inquiry: ${msg.text?.body || 'Media/Attachment sent'}`
               };
               
-              // 3. Save directly to CRM database
-              const { error } = await supabase.from('leads').insert([newLead]);
-              
-              if (error) {
-                console.error('[WhatsApp Webhook DB Error]:', error.message);
-              } else {
-                console.log(`[WhatsApp Lead Captured] Added ${customerName} to CRM.`);
-                
-                // 4. AUTOMATED FOLLOW-UP (As requested by user)
-                await sendFollowUpLead(phone, customerName);
-              }
+              await Lead.create(newLead);
+              console.log(`[WhatsApp Lead Captured] Added ${customerName} to CRM.`);
+              await sendFollowUpLead(phone, customerName);
             } else {
               console.log(`[WhatsApp Filter] Ignored casual/spam message from ${phone}: "${messageText}"`);
             }
@@ -182,18 +163,9 @@ router.post('/meta', async (req, res) => {
             const phoneIdentifier = platform === 'facebook' ? `fb:${senderId}` : `ig:${senderId}`;
 
             // Check Duplicates
-            const { data: existingLeads } = await supabase
-              .from('leads')
-              .select('id')
-              .eq('phone', phoneIdentifier);
-              
-            const { data: existingContacts } = await supabase
-              .from('contacts')
-              .select('id')
-              .eq('phone', phoneIdentifier);
-
-            const isExisting = (existingLeads && existingLeads.length > 0) || 
-                               (existingContacts && existingContacts.length > 0);
+            const existingLead = await Lead.findOne({ phone: phoneIdentifier });
+            const existingContact = await Contact.findOne({ phone: phoneIdentifier });
+            const isExisting = !!existingLead || !!existingContact;
 
             if (isExisting) {
               console.log(`[${platform.toUpperCase()} Filter] Message ignored - ${phoneIdentifier} is already an active Lead/Contact.`);
@@ -214,25 +186,11 @@ router.post('/meta', async (req, res) => {
                   notes: `Initial Inquiry: ${messageText || 'Media/Attachment sent'}`
                 };
                 
-                const { error } = await supabase.from('leads').insert([newLead]);
-                if (error) {
-                  console.error(`[${platform.toUpperCase()} Webhook DB Error]:`, error.message);
-                } else {
-                  console.log(`[${platform.toUpperCase()} Lead Captured] Added ${customerName} to CRM.`);
-                }
+                await Lead.create(newLead);
+                console.log(`[${platform.toUpperCase()} Lead Captured] Added ${customerName} to CRM.`);
               }
             }
           }
-        }
-        
-        // 2. Handle Leadgen webhook events (Lead Gen forms)
-        const changes = entry?.changes?.[0];
-        if (changes && changes.field === 'leadgen') {
-          const leadId = changes.value.leadgen_id;
-          console.log(`[FB/IG Lead Gen Triggered] Lead ID to process: ${leadId}`);
-          
-          // Future implementation: Fetch lead data from Graph API using leadId
-          // then call sendFollowUpLead(leadPhone, leadName);
         }
       }
 
@@ -246,11 +204,10 @@ router.post('/meta', async (req, res) => {
   }
 });
 
-// ... LinkedIn logic ...
+// LinkedIn Lead Gen
 router.post('/linkedin', async (req, res) => {
   try {
-    const payload = req.body;
-    console.log('[LinkedIn Webhook Received]', payload);
+    console.log('[LinkedIn Webhook Received]', req.body);
     res.status(200).send('EVENT_RECEIVED');
   } catch (err) {
     console.error('[LinkedIn Webhook Error]:', err);
@@ -259,28 +216,18 @@ router.post('/linkedin', async (req, res) => {
 });
 
 // 3. Webhook endpoint to receive leads from the WhatsApp Bot
-router.post('/whatsapp-bot-lead', async (req, res) => {
+router.all('/whatsapp-bot-lead', async (req, res) => {
+  if (req.method === 'GET') {
+    return res.status(200).json({ status: 'ok', service: 'whatsapp-bot-lead' });
+  }
   try {
     const payload = req.body;
-    console.log('[WhatsApp Bot Webhook Received]', payload);
-
-    const {
-      CustomerName,
-      WhatsAppNumber,
-      ServiceSelected,
-      AreaRequired,
-      SiteLocation,
-      Timeline,
-      BudgetRange,
-      LeadScore,
-      LeadStatus
-    } = payload;
+    const { CustomerName, WhatsAppNumber, ServiceSelected, AreaRequired, SiteLocation, Timeline, BudgetRange, SourceChannel, LeadStatus } = payload;
 
     if (!WhatsAppNumber) {
       return res.status(400).json({ error: 'Missing WhatsApp number' });
     }
 
-    // Clean and format phone number
     let finalPhone = WhatsAppNumber;
     if (!WhatsAppNumber.startsWith('fb:') && !WhatsAppNumber.startsWith('ig:')) {
       const formattedPhone = WhatsAppNumber.replace(/\D/g, '');
@@ -309,64 +256,35 @@ router.post('/whatsapp-bot-lead', async (req, res) => {
       notes: `Captured from ${SourceChannel || leadSource}.\nBudget: ${BudgetRange || 'Not confirmed'}`
     };
 
-    // Try Supabase first, always fall back to db.json on any error
-    let savedToSupabase = false;
-    try {
-      const { data: existingLeads, error: selectErr } = await supabase
-        .from('leads')
-        .select('id')
-        .eq('phone', finalPhone);
-
-      if (!selectErr) {
-        if (existingLeads && existingLeads.length > 0) {
-          console.log(`[WhatsApp Bot Webhook] Lead ${finalPhone} exists — updating.`);
-          const { error: updateErr } = await supabase
-            .from('leads')
-            .update({ ...leadPayload, updated_at: new Date().toISOString() })
-            .eq('phone', finalPhone);
-          if (!updateErr) savedToSupabase = true;
-          else console.warn('[Supabase Update Warn]:', updateErr.message);
-        } else {
-          const { error: insertErr } = await supabase
-            .from('leads')
-            .insert([leadPayload]);
-          if (!insertErr) savedToSupabase = true;
-          else console.warn('[Supabase Insert Warn]:', insertErr.message);
-        }
-      } else {
-        console.warn('[Supabase Select Warn]:', selectErr.message);
-      }
-    } catch (supaErr) {
-      console.warn('[Supabase Exception]:', supaErr.message);
+    const existing = await Lead.findOne({ phone: finalPhone });
+    if (existing) {
+      await Lead.updateOne({ _id: existing._id }, { ...leadPayload, updated_at: new Date() });
+    } else {
+      await Lead.create(leadPayload);
     }
 
-    // Always write to local db.json as well (guarantees production CRM sees the lead)
-    const localSaved = writeLeadToLocalDb(leadPayload);
-    const storage = savedToSupabase ? 'Supabase' : localSaved ? 'local db.json' : 'none';
-
-    console.log(`[WhatsApp Bot Webhook] Lead "${leadPayload.contactName}" (${finalPhone}) saved to: ${storage}`);
-    res.status(201).json({ success: true, message: `Lead saved to ${storage}`, source: storage });
+    writeLeadToLocalDb(leadPayload);
+    res.status(201).json({ success: true, message: 'Lead saved to MongoDB Atlas' });
 
   } catch (err) {
     console.error('[WhatsApp Bot Webhook Error]:', err);
-    // Last resort — still try to save locally and return 200
     res.status(200).json({ success: false, fallback: true, error: err.message });
   }
 });
 
 // 4. Webhook endpoint to receive general enquiries from the WhatsApp Bot
-router.post('/whatsapp-bot-enquiry', async (req, res) => {
+router.all('/whatsapp-bot-enquiry', async (req, res) => {
+  if (req.method === 'GET') {
+    return res.status(200).json({ status: 'ok', service: 'whatsapp-bot-enquiry' });
+  }
   try {
     const payload = req.body;
-    console.log('[WhatsApp Bot Enquiry Webhook Received]', payload);
-
     const { CustomerName, WhatsAppNumber, MessageText } = payload;
 
     if (!WhatsAppNumber) {
       return res.status(400).json({ error: 'Missing WhatsApp number' });
     }
 
-    // Clean and format phone number
     let finalPhone = WhatsAppNumber;
     if (!WhatsAppNumber.startsWith('fb:') && !WhatsAppNumber.startsWith('ig:')) {
       const formattedPhone = WhatsAppNumber.replace(/\D/g, '');
@@ -374,60 +292,39 @@ router.post('/whatsapp-bot-enquiry', async (req, res) => {
     }
 
     let defaultName = 'WhatsApp Customer';
-    if (WhatsAppNumber.startsWith('fb:')) {
-      defaultName = 'Facebook Customer';
-    } else if (WhatsAppNumber.startsWith('ig:')) {
-      defaultName = 'Instagram Customer';
-    }
+    if (WhatsAppNumber.startsWith('fb:')) defaultName = 'Facebook Customer';
+    else if (WhatsAppNumber.startsWith('ig:')) defaultName = 'Instagram Customer';
 
-    // Check if this enquiry already exists in CRM enquiries table to avoid duplication
-    const { data: existingEnquiries } = await supabase
-      .from('enquiries')
-      .select('id')
-      .eq('phone', finalPhone);
+    const existingEnq = await Enquiry.findOne({ phone: finalPhone });
 
-    if (existingEnquiries && existingEnquiries.length > 0) {
-      console.log(`[WhatsApp Bot Enquiry] Enquiry with phone ${finalPhone} already exists. Updating last message.`);
-      
-      const updateData = {
+    if (existingEnq) {
+      await Enquiry.updateOne({ _id: existingEnq._id }, {
         contactName: CustomerName || defaultName,
         lastMessage: MessageText || '',
-        updated_at: new Date().toISOString()
-      };
-
-      const { error } = await supabase
-        .from('enquiries')
-        .update(updateData)
-        .eq('phone', finalPhone);
-
-      if (error) throw error;
-      
+        updated_at: new Date()
+      });
       return res.status(200).json({ success: true, message: 'Enquiry updated successfully' });
     }
 
-    const newEnquiry = {
-      contactName: CustomerName || 'WhatsApp Customer',
+    await Enquiry.create({
+      contactName: CustomerName || defaultName,
       phone: finalPhone,
       lastMessage: MessageText || '',
       status: 'New'
-    };
+    });
 
-    const { error } = await supabase
-      .from('enquiries')
-      .insert([newEnquiry]);
-
-    if (error) throw error;
-
-    console.log(`[WhatsApp Bot Enquiry] Created new enquiry for ${newEnquiry.contactName} (${newEnquiry.phone})`);
     res.status(201).json({ success: true, message: 'Enquiry created successfully' });
   } catch (err) {
-    console.error('[WhatsApp Bot Enquiry Webhook Error]:', err);
+    console.error('[WhatsApp Bot Enquiry Error]:', err);
     res.status(500).json({ error: err.message || 'Internal server error while inserting enquiry' });
   }
 });
 
 // 5. Webhook endpoint to receive automated follow-ups from the WhatsApp Bot and record on CRM Follow-Ups page
-router.post('/whatsapp-bot-followup', async (req, res) => {
+router.all('/whatsapp-bot-followup', async (req, res) => {
+  if (req.method === 'GET') {
+    return res.status(200).json({ status: 'ok', service: 'whatsapp-bot-followup' });
+  }
   try {
     const payload = req.body;
     console.log('[WhatsApp Bot Follow-Up Webhook Received]', payload);
@@ -440,10 +337,8 @@ router.post('/whatsapp-bot-followup', async (req, res) => {
 
     const messageText = FollowUpText || `👋 *Hello ${CustomerName || 'Valued Client'} from Deepika Builtech Engineering!*\n\nWe are following up regarding your enquiry for PEB & warehouse construction services.\n\nOur engineering team is ready to assist you with a free site consultation and cost estimate. 🏗️\n\n📞 Call / WhatsApp: +91 96000 67611 / +91 98844 87938\n🌐 deepikabuiltech.com`;
 
-    // 1. Dispatch actual message to customer via WhatsApp or Meta Cloud API
     const isIG = WhatsAppNumber.startsWith('ig:');
     const isFB = WhatsAppNumber.startsWith('fb:');
-    let messageSent = false;
 
     if (isIG || isFB) {
       const recipientId = WhatsAppNumber.replace(/^(ig:|fb:)/, '');
@@ -454,46 +349,33 @@ router.post('/whatsapp-bot-followup', async (req, res) => {
           { recipient: { id: recipientId }, message: { text: messageText } },
           { params: { access_token: token } }
         );
-        messageSent = true;
         console.log(`✅ [CRM Outbound Meta DM Delivered] to ${WhatsAppNumber}`);
       } catch (errMeta) {
         console.warn(`⚠️ [CRM Meta Follow-Up Notice]:`, errMeta.response?.data || errMeta.message);
       }
     } else {
-      const resWhatsApp = await sendDirectWhatsAppText(WhatsAppNumber, messageText);
-      messageSent = resWhatsApp.success;
-      if (messageSent) console.log(`✅ [CRM Outbound WhatsApp Delivered] to ${WhatsAppNumber}`);
+      await sendDirectWhatsAppText(WhatsAppNumber, messageText);
     }
 
-    // 2. Insert Follow-up record into Supabase followups table
-    const newFollowUp = {
+    await FollowUp.create({
       title: `7-Day Follow-Up: ${CustomerName || WhatsAppNumber}`,
       type: Channel || (isIG ? 'Instagram DM' : isFB ? 'Facebook Messenger' : 'WhatsApp'),
-      scheduled_date: new Date().toISOString(),
+      scheduled_date: new Date(),
       status: 'Completed',
       notes: messageText
-    };
+    });
 
-    const { data, error } = await supabase
-      .from('followups')
-      .insert([newFollowUp])
-      .select();
+    await Lead.updateOne({ phone: WhatsAppNumber }, {
+      last_contacted_at: new Date(),
+      updated_at: new Date()
+    });
 
-    if (error) {
-      console.error('[WhatsApp Bot Follow-Up Webhook DB Error]:', error.message);
-    }
-
-    // 3. Update last_contacted_at in leads table
-    await supabase.from('leads').update({
-      last_contacted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }).eq('phone', WhatsAppNumber);
-
-    console.log(`[WhatsApp Bot Follow-Up Webhook] Completed follow-up for ${newFollowUp.title}`);
     res.status(200).json({ success: true, message: 'Follow-up message dispatched and logged to CRM!' });
   } catch (err) {
-    console.error('[WhatsApp Bot Follow-Up Webhook Error]:', err);
+    console.error('[WhatsApp Bot Follow-Up Error]:', err);
     res.status(500).json({ error: err.message || 'Internal server error while processing follow-up' });
+  }
+});cessing follow-up' });
   }
 });
 
