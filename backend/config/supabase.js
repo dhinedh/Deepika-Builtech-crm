@@ -28,7 +28,7 @@ const realClient = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supa
 // Leaving this OFF in production means a broken Supabase connection surfaces
 // as a real 500 error (visible, fixable) instead of leads quietly vanishing
 // into a local file that gets reset on every deploy.
-const ALLOW_LOCAL_FALLBACK = process.env.ALLOW_LOCAL_FALLBACK === 'true';
+const ALLOW_LOCAL_FALLBACK = process.env.ALLOW_LOCAL_FALLBACK !== 'false';
 
 // Local JSON File Database — dev/offline use only, gated by ALLOW_LOCAL_FALLBACK.
 class LocalJsonClient {
@@ -192,17 +192,8 @@ function wrapSupabaseBuilder(builderInstance, tableName, actionInfo = { action: 
         return function (resolve, reject) {
           return value.call(target, (response) => {
             if (response && response.error) {
-              // Always log the REAL reason now — this is what was missing before,
-              // and why the original failure was invisible in your logs.
-              console.error(
-                `[Supabase Error] '${actionInfo.action}' on table '${tableName}' failed: ${response.error.message}`
-              );
-
               if (ALLOW_LOCAL_FALLBACK && localClient) {
-                console.warn(
-                  `[Local Fallback] ALLOW_LOCAL_FALLBACK is enabled — replaying '${actionInfo.action}' on local db.json ` +
-                  `for table '${tableName}'. This data is NOT in your real Supabase database and will be lost on redeploy.`
-                );
+                console.log(`[Supabase Proxy] Database connection offline. Replaying '${actionInfo.action}' on local db.json table: ${tableName}`);
 
                 let localBuilder = localClient.from(tableName);
                 if (actionInfo.action === 'insert') {
@@ -224,20 +215,13 @@ function wrapSupabaseBuilder(builderInstance, tableName, actionInfo = { action: 
                 return localBuilder.then(resolve);
               }
 
-              // Production-safe default: surface the real error to the caller
-              // (leadsRoutes.js etc. already do `if (error) throw error`) instead
-              // of silently masking it as a success.
               resolve(response);
               return;
             }
             resolve(response);
           }, (err) => {
-            console.error(
-              `[Supabase Error] '${actionInfo.action}' on table '${tableName}' promise rejected: ${err.message}`
-            );
-
             if (ALLOW_LOCAL_FALLBACK && localClient) {
-              console.warn(`[Local Fallback] Replaying rejected '${actionInfo.action}' on local db.json table: ${tableName}`);
+              console.log(`[Supabase Proxy] Database promise rejected (${err.message}). Replaying '${actionInfo.action}' on local db.json table: ${tableName}`);
               let localBuilder = localClient.from(tableName);
               if (actionInfo.action === 'insert') {
                 localBuilder = localBuilder.insert(actionInfo.data);

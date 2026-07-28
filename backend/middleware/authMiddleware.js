@@ -6,36 +6,30 @@ const ALLOW_DEV_AUTH_BYPASS = process.env.ALLOW_DEV_AUTH_BYPASS === 'true';
 
 export const requireAuth = async (req, res, next) => {
   try {
+    if (ALLOW_DEV_AUTH_BYPASS) {
+      req.user = { id: 'mock-user-id', email: 'admin@deepikabuiltech.com' };
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      // If no token provided, still check if auth header exists or allow read
       return res.status(401).json({ error: 'Unauthorized: No token provided' });
     }
 
     const token = authHeader.split(' ')[1];
 
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized: Empty token' });
+    // Verify the JWT token for real with Supabase — no more hardcoded bypass.
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
     }
 
-    // Try verifying with Supabase if active
-    try {
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      if (!error && user) {
-        req.user = user;
-        return next();
-      }
-    } catch (supaErr) {
-      // Supabase is offline/unreachable
-    }
-
-    // Fallback: If token is present, allow access so CRM functions even when Supabase auth is offline
-    req.user = { id: 'admin-user-id', email: 'admin@deepikabuiltech.com' };
+    req.user = user;
     next();
   } catch (err) {
     console.error('[Security] Auth middleware error:', err);
-    req.user = { id: 'admin-user-id', email: 'admin@deepikabuiltech.com' };
-    next();
+    res.status(500).json({ error: 'Internal server error during authentication' });
   }
 };
