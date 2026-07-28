@@ -5,6 +5,10 @@
   "installCommand": "cd frontend && npm install",
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://deepika-builtech-crm-4jj1.onrender.com/api/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
