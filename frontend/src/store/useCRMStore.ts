@@ -91,7 +91,7 @@ export const useCRMStore = create<CRMState>()(
       fetchEnquiries: async () => {
         try {
           const res = await secureFetch('/enquiries');
-          if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+          if (res?.success && Array.isArray(res.data)) {
             const mappedEnquiries: Enquiry[] = res.data.map((e: any) => ({
               id: e.id,
               contactName: e.contactName || e.contact_name || 'WhatsApp Customer',
@@ -104,11 +104,13 @@ export const useCRMStore = create<CRMState>()(
             set({ enquiries: mappedEnquiries });
             return;
           }
-        } catch (err) {}
+        } catch (err: any) {
+          console.warn('[CRM Store] fetchEnquiries error:', err.message);
+        }
 
         try {
           const { data } = await supabase.from('enquiries').select('*').order('created_at', { ascending: false });
-          if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(data)) {
             const mappedEnquiries: Enquiry[] = data.map((e: any) => ({
               id: e.id,
               contactName: e.contactName || e.contact_name || 'WhatsApp Customer',
@@ -126,7 +128,7 @@ export const useCRMStore = create<CRMState>()(
       fetchLeads: async () => {
         try {
           const res = await secureFetch('/leads');
-          if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+          if (res?.success && Array.isArray(res.data)) {
             const mappedLeads: Lead[] = res.data.map((lead: any) => ({
               id: lead.id,
               contactName: lead.contactName || lead.contact_name || lead.name || 'Unspecified Lead',
@@ -148,7 +150,9 @@ export const useCRMStore = create<CRMState>()(
             set({ leads: mappedLeads });
             return;
           }
-        } catch (err) {}
+        } catch (err: any) {
+          console.warn('[CRM Store] fetchLeads error:', err.message);
+        }
 
         try {
           const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false });

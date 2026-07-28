@@ -54,24 +54,12 @@ const configuredOrigins = rawAllowedOrigins
 // Merge lists to guarantee custom domains work even if environment variables are not updated yet
 const allowedOrigins = [...new Set([...defaultOrigins, ...configuredOrigins])];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    const cleanOrigin = origin.trim().replace(/\/$/, '');
-    if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      console.warn(`[CORS Blocked] Request origin: ${origin} not found in allowed list.`);
-      callback(null, false);
-    }
-  },
-  credentials: true
-}));
+app.use(cors());
 
 const apiLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000,
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-  message: { error: 'Too many requests from this IP, please try again after 15 minutes' },
+  max: 10000,
+  message: { error: 'Too many requests' },
   standardHeaders: true,
   legacyHeaders: false,
 });
