@@ -91,19 +91,9 @@
       "updated_at": "2026-07-28T03:40:41.320Z"
     },
     {
-      "id": "enq-6a683814bdb82ed0e8f27f3d",
-      "contactName": "Mugil",
-      "phone": "FB: 27771030239224834",
-      "lastMessage": "🏗️ Greetings from Deepika Builtech Engineering!\n\nThank you for reaching out regarding your building and structural requirements.\n\nOur engineering team is reviewing your inquiry. Please let us know a convenient time to discuss your project specifications or arrange a free site consultation:\n\n📞 Call/WhatsApp: +91 96000 67611\n🌐 Website: deepikabuiltech.com\n\nHow can we assist you today? 😊",
-      "status": "New",
-      "source": "Facebook Messenger",
-      "created_at": "2026-07-22T22:06:12.000Z",
-      "updated_at": "2026-07-22T22:06:12.000Z"
-    },
-    {
       "id": "enq-6a683814bdb82ed0e8f27f3e",
       "contactName": "Manna Foods",
-      "phone": "FB: 28245216648417848",
+      "phone": "Facebook Messenger",
       "lastMessage": "Can u please contact this number +91 97916 44688 for enquiry and more details",
       "status": "New",
       "source": "Facebook Messenger",
@@ -113,7 +103,7 @@
     {
       "id": "enq-6a683814bdb82ed0e8f27f3f",
       "contactName": "Kathir Kaman",
-      "phone": "FB: 27482555051404433",
+      "phone": "Facebook Messenger",
       "lastMessage": "Can u please contact this number +91 97916 44688 for enquiry and more details",
       "status": "New",
       "source": "Facebook Messenger",
@@ -123,7 +113,7 @@
     {
       "id": "enq-6a683815bdb82ed0e8f27f40",
       "contactName": "Kartik Sethi",
-      "phone": "FB: 27952322254454756",
+      "phone": "Facebook Messenger",
       "lastMessage": "Call is not connecting please contact this number sir",
       "status": "New",
       "source": "Facebook Messenger",
@@ -133,7 +123,7 @@
     {
       "id": "enq-6a683815bdb82ed0e8f27f41",
       "contactName": "M Rahman",
-      "phone": "FB: 27047821084918953",
+      "phone": "Facebook Messenger",
       "lastMessage": "I'm rooftop sheet fitting warking",
       "status": "New",
       "source": "Facebook Messenger",
@@ -143,7 +133,7 @@
     {
       "id": "enq-6a683815bdb82ed0e8f27f42",
       "contactName": "Nagallikar Manjunatha",
-      "phone": "FB: 27697261026559596",
+      "phone": "Facebook Messenger",
       "lastMessage": "civil engineer",
       "status": "New",
       "source": "Facebook Messenger",
@@ -153,7 +143,7 @@
     {
       "id": "enq-6a683819bdb82ed0e8f27f43",
       "contactName": "Ramya R",
-      "phone": "FB: 1",
+      "phone": "Facebook Messenger",
       "lastMessage": "Enquiry from Facebook Messenger: PEB Warehouse",
       "status": "New",
       "source": "Facebook Messenger",
@@ -163,7 +153,7 @@
     {
       "id": "enq-6a683819bdb82ed0e8f27f44",
       "contactName": "Rajesh Madasamy",
-      "phone": "FB: 2",
+      "phone": "Facebook Messenger",
       "lastMessage": "Enquiry from Facebook Messenger: Industrial Shed",
       "status": "New",
       "source": "Facebook Messenger",
@@ -173,7 +163,7 @@
     {
       "id": "enq-6a68381abdb82ed0e8f27f45",
       "contactName": "Avj Architecture (Surya)",
-      "phone": "FB: 3",
+      "phone": "Facebook Messenger",
       "lastMessage": "Enquiry from Facebook Messenger: Architectural PEB",
       "status": "New",
       "source": "Facebook Messenger",
@@ -183,22 +173,12 @@
     {
       "id": "enq-6a68381abdb82ed0e8f27f46",
       "contactName": "Tyagi Nikhil",
-      "phone": "FB: 4",
+      "phone": "Facebook Messenger",
       "lastMessage": "Enquiry from Facebook Messenger: Cold Storage Warehouse",
       "status": "New",
       "source": "Facebook Messenger",
       "created_at": "2026-07-20T08:00:00.000Z",
       "updated_at": "2026-07-20T08:00:00.000Z"
-    },
-    {
-      "id": "enq-6a683821a90803f2aa89ec60",
-      "contactName": "Karthik Raja",
-      "phone": "+91 98765 12345",
-      "lastMessage": "👋 *Hello Karthik Raja from Deepika Builtech Engineering!*\n\nThank you for reaching out regarding your requirement for *PEB Warehouse* in *Sriperumbudur*! 🏗️\n\nWe are Tamil Nadu's leading Pre-Engineered Building (PEB) specialists. Our team is ready to assist you with free layout designs and cost estimation.\n\n📞 Sales Support: +91 93424 00879 / +91 96000 67611\n🌐 Website: deepikabuiltech.com\n\nReply to this message anytime to connect with our engineers!",
-      "status": "New",
-      "source": "WhatsApp Bot",
-      "created_at": "2026-07-28T05:03:30.402Z",
-      "updated_at": "2026-07-28T05:03:30.402Z"
     }
   ],
   "leads": [
@@ -347,25 +327,9 @@
       "updated_at": "2026-07-28T03:40:41.320Z"
     },
     {
-      "id": "lead-6a683814bdb82ed0e8f27f3d",
-      "contactName": "Mugil",
-      "phone": "FB: 27771030239224834",
-      "projectType": "PEB & Construction Services",
-      "location": "Tamil Nadu",
-      "landArea": "",
-      "timeline": "Immediate",
-      "estimatedBudget": 50,
-      "status": "New",
-      "leadScore": 80,
-      "source": "Facebook Messenger",
-      "notes": "Captured from Facebook Messenger.\nBudget: Not confirmed",
-      "created_at": "2026-07-22T22:06:12.000Z",
-      "updated_at": "2026-07-22T22:06:12.000Z"
-    },
-    {
       "id": "lead-6a683814bdb82ed0e8f27f3e",
       "contactName": "Manna Foods",
-      "phone": "FB: 28245216648417848",
+      "phone": "Facebook Messenger",
       "projectType": "PEB & Construction Services",
       "location": "Tamil Nadu",
       "landArea": "",
@@ -381,7 +345,7 @@
     {
       "id": "lead-6a683814bdb82ed0e8f27f3f",
       "contactName": "Kathir Kaman",
-      "phone": "FB: 27482555051404433",
+      "phone": "Facebook Messenger",
       "projectType": "PEB & Construction Services",
       "location": "Tamil Nadu",
       "landArea": "",
@@ -397,7 +361,7 @@
     {
       "id": "lead-6a683815bdb82ed0e8f27f40",
       "contactName": "Kartik Sethi",
-      "phone": "FB: 27952322254454756",
+      "phone": "Facebook Messenger",
       "projectType": "PEB & Construction Services",
       "location": "Tamil Nadu",
       "landArea": "",
@@ -413,7 +377,7 @@
     {
       "id": "lead-6a683815bdb82ed0e8f27f41",
       "contactName": "M Rahman",
-      "phone": "FB: 27047821084918953",
+      "phone": "Facebook Messenger",
       "projectType": "PEB & Construction Services",
       "location": "Tamil Nadu",
       "landArea": "",
@@ -429,7 +393,7 @@
     {
       "id": "lead-6a683815bdb82ed0e8f27f42",
       "contactName": "Nagallikar Manjunatha",
-      "phone": "FB: 27697261026559596",
+      "phone": "Facebook Messenger",
       "projectType": "PEB & Construction Services",
       "location": "Tamil Nadu",
       "landArea": "",
@@ -445,7 +409,7 @@
     {
       "id": "lead-6a683819bdb82ed0e8f27f43",
       "contactName": "Ramya R",
-      "phone": "FB: 1",
+      "phone": "Facebook Messenger",
       "projectType": "PEB Warehouse",
       "location": "Chennai",
       "landArea": "",
@@ -461,7 +425,7 @@
     {
       "id": "lead-6a683819bdb82ed0e8f27f44",
       "contactName": "Rajesh Madasamy",
-      "phone": "FB: 2",
+      "phone": "Facebook Messenger",
       "projectType": "Industrial Shed",
       "location": "Coimbatore",
       "landArea": "",
@@ -477,7 +441,7 @@
     {
       "id": "lead-6a68381abdb82ed0e8f27f45",
       "contactName": "Avj Architecture (Surya)",
-      "phone": "FB: 3",
+      "phone": "Facebook Messenger",
       "projectType": "Architectural PEB",
       "location": "Madurai",
       "landArea": "",
@@ -493,7 +457,7 @@
     {
       "id": "lead-6a68381abdb82ed0e8f27f46",
       "contactName": "Tyagi Nikhil",
-      "phone": "FB: 4",
+      "phone": "Facebook Messenger",
       "projectType": "Cold Storage Warehouse",
       "location": "Hosur",
       "landArea": "",
@@ -505,22 +469,6 @@
       "notes": "Captured from Facebook Messenger.\nBudget: Not confirmed",
       "created_at": "2026-07-20T08:00:00.000Z",
       "updated_at": "2026-07-20T08:00:00.000Z"
-    },
-    {
-      "id": "lead-6a683821a90803f2aa89ec60",
-      "contactName": "Karthik Raja",
-      "phone": "+91 98765 12345",
-      "projectType": "PEB Warehouse",
-      "location": "Sriperumbudur",
-      "landArea": "",
-      "timeline": "Immediate",
-      "estimatedBudget": 50,
-      "status": "New",
-      "leadScore": 80,
-      "source": "WhatsApp Bot",
-      "notes": "Captured from WhatsApp Bot.\nBudget: Not confirmed",
-      "created_at": "2026-07-28T05:03:30.402Z",
-      "updated_at": "2026-07-28T05:03:30.402Z"
     }
   ],
   "contacts": [],
@@ -619,20 +567,10 @@
       "notes": "Automated follow-up logged for Jerome Jackxly"
     },
     {
-      "id": "fol-6a683814bdb82ed0e8f27f3d",
-      "lead_id": "lead-6a683814bdb82ed0e8f27f3d",
-      "contactName": "Mugil",
-      "WhatsAppNumber": "FB: 27771030239224834",
-      "type": "Facebook Messenger",
-      "scheduled_date": "2026-07-22T22:06:12.000Z",
-      "status": "Completed",
-      "notes": "Automated follow-up logged for Mugil"
-    },
-    {
       "id": "fol-6a683814bdb82ed0e8f27f3e",
       "lead_id": "lead-6a683814bdb82ed0e8f27f3e",
       "contactName": "Manna Foods",
-      "WhatsAppNumber": "FB: 28245216648417848",
+      "WhatsAppNumber": "Facebook Messenger",
       "type": "Facebook Messenger",
       "scheduled_date": "2026-07-18T04:11:58.000Z",
       "status": "Completed",
@@ -642,7 +580,7 @@
       "id": "fol-6a683814bdb82ed0e8f27f3f",
       "lead_id": "lead-6a683814bdb82ed0e8f27f3f",
       "contactName": "Kathir Kaman",
-      "WhatsAppNumber": "FB: 27482555051404433",
+      "WhatsAppNumber": "Facebook Messenger",
       "type": "Facebook Messenger",
       "scheduled_date": "2026-07-17T17:00:43.000Z",
       "status": "Completed",
@@ -652,7 +590,7 @@
       "id": "fol-6a683815bdb82ed0e8f27f40",
       "lead_id": "lead-6a683815bdb82ed0e8f27f40",
       "contactName": "Kartik Sethi",
-      "WhatsAppNumber": "FB: 27952322254454756",
+      "WhatsAppNumber": "Facebook Messenger",
       "type": "Facebook Messenger",
       "scheduled_date": "2026-07-17T17:00:25.000Z",
       "status": "Completed",
@@ -662,7 +600,7 @@
       "id": "fol-6a683815bdb82ed0e8f27f41",
       "lead_id": "lead-6a683815bdb82ed0e8f27f41",
       "contactName": "M Rahman",
-      "WhatsAppNumber": "FB: 27047821084918953",
+      "WhatsAppNumber": "Facebook Messenger",
       "type": "Facebook Messenger",
       "scheduled_date": "2026-07-11T17:42:45.000Z",
       "status": "Completed",
@@ -672,7 +610,7 @@
       "id": "fol-6a683815bdb82ed0e8f27f42",
       "lead_id": "lead-6a683815bdb82ed0e8f27f42",
       "contactName": "Nagallikar Manjunatha",
-      "WhatsAppNumber": "FB: 27697261026559596",
+      "WhatsAppNumber": "Facebook Messenger",
       "type": "Facebook Messenger",
       "scheduled_date": "2026-07-11T15:34:51.000Z",
       "status": "Completed",
@@ -682,7 +620,7 @@
       "id": "fol-6a683819bdb82ed0e8f27f43",
       "lead_id": "lead-6a683819bdb82ed0e8f27f43",
       "contactName": "Ramya R",
-      "WhatsAppNumber": "FB: 1",
+      "WhatsAppNumber": "Facebook Messenger",
       "type": "Facebook Messenger",
       "scheduled_date": "2026-07-22T10:00:00.000Z",
       "status": "Completed",
@@ -692,7 +630,7 @@
       "id": "fol-6a683819bdb82ed0e8f27f44",
       "lead_id": "lead-6a683819bdb82ed0e8f27f44",
       "contactName": "Rajesh Madasamy",
-      "WhatsAppNumber": "FB: 2",
+      "WhatsAppNumber": "Facebook Messenger",
       "type": "Facebook Messenger",
       "scheduled_date": "2026-07-22T11:00:00.000Z",
       "status": "Completed",
@@ -702,7 +640,7 @@
       "id": "fol-6a68381abdb82ed0e8f27f45",
       "lead_id": "lead-6a68381abdb82ed0e8f27f45",
       "contactName": "Avj Architecture (Surya)",
-      "WhatsAppNumber": "FB: 3",
+      "WhatsAppNumber": "Facebook Messenger",
       "type": "Facebook Messenger",
       "scheduled_date": "2026-07-20T09:00:00.000Z",
       "status": "Completed",
@@ -712,21 +650,11 @@
       "id": "fol-6a68381abdb82ed0e8f27f46",
       "lead_id": "lead-6a68381abdb82ed0e8f27f46",
       "contactName": "Tyagi Nikhil",
-      "WhatsAppNumber": "FB: 4",
+      "WhatsAppNumber": "Facebook Messenger",
       "type": "Facebook Messenger",
       "scheduled_date": "2026-07-20T08:00:00.000Z",
       "status": "Completed",
       "notes": "Automated follow-up logged for Tyagi Nikhil"
-    },
-    {
-      "id": "fol-6a683821a90803f2aa89ec60",
-      "lead_id": "lead-6a683821a90803f2aa89ec60",
-      "contactName": "Karthik Raja",
-      "WhatsAppNumber": "+91 98765 12345",
-      "type": "WhatsApp Bot",
-      "scheduled_date": "2026-07-28T05:03:30.402Z",
-      "status": "Completed",
-      "notes": "Automated follow-up logged for Karthik Raja"
     }
   ]
 }

@@ -49,14 +49,15 @@ export function detectLeadPlatform(lead: LeadTarget): ChannelPlatform {
   const source = (lead.source || '').toLowerCase();
   const phone = (lead.phone || '').toLowerCase();
 
-  if (source.includes('instagram') || phone.startsWith('ig:')) {
+  if (source.includes('instagram') || phone.startsWith('ig:') || phone.startsWith('@')) {
     return 'instagram';
   }
-  if (source.includes('facebook') || phone.startsWith('fb:') || phone.includes('messenger')) {
+  if (source.includes('facebook') || phone.startsWith('fb:') || phone.includes('messenger') || phone.includes('facebook')) {
     return 'facebook';
   }
   return 'whatsapp';
 }
+
 
 export const sendOmniChannelMessage = async (
   lead: LeadTarget,
@@ -137,15 +138,18 @@ export function formatContactSubtitle(phone: string): string {
   const key = phone.trim();
   if (HANDLE_MAP[key]) return HANDLE_MAP[key];
 
-  const strippedKey = key.replace(/^(ig:|@)/i, '');
+  const strippedKey = key.replace(/^(ig:|@|fb:)/i, '');
   if (HANDLE_MAP[strippedKey]) return HANDLE_MAP[strippedKey];
 
-  if (key.startsWith('ig:') || key.startsWith('@')) {
+  if (key.toLowerCase().startsWith('ig:') || key.startsWith('@')) {
     const handle = key.replace(/^(ig:|@)/i, '');
+    if (HANDLE_MAP[handle]) return HANDLE_MAP[handle];
     return `@${handle}`;
   }
-  if (key.startsWith('fb:')) {
-    return `FB: ${key.replace(/^fb:/i, '')}`;
+  if (key.toLowerCase().startsWith('fb:') || key.toLowerCase().startsWith('fb :')) {
+    const handle = key.replace(/^(fb:|fb\s*:)/i, '').trim();
+    if (HANDLE_MAP[handle] || HANDLE_MAP[`fb:${handle}`]) return HANDLE_MAP[handle] || HANDLE_MAP[`fb:${handle}`];
+    return 'Facebook Messenger';
   }
 
   const clean = key.replace(/\D/g, '');
@@ -157,5 +161,6 @@ export function formatContactSubtitle(phone: string): string {
   }
   return key;
 }
+
 
 

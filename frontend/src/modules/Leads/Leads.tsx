@@ -140,6 +140,7 @@ const Leads: React.FC = () => {
                       name={lead.contactName} 
                       contactId={lead.id} 
                       leadId={lead.id} 
+                      source={lead.source}
                     />
                   </div>
                 </td>
