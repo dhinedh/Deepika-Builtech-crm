@@ -18,16 +18,23 @@ export const RequestedQuotations: React.FC = () => {
     fetchEnquiries?.();
   }, []);
 
-  // Filter leads/enquiries that have requested quotations
-  const quoteRequests = leads.map(l => ({
+  // Filter ONLY leads that have explicitly requested a quotation via chatbot/forms
+  const quoteRequestedLeads = leads.filter(l => 
+    l.isQuoteRequested === true || 
+    l.status === 'Quotation Requested'
+  );
+
+  const quoteRequests = quoteRequestedLeads.map(l => ({
     id: l.id,
     contactName: l.contactName || 'Valued Client',
     phone: l.phone || '',
     service: l.projectType || 'PEB Warehouse Construction',
-    area: l.landArea || 'As per layout requirements',
-    location: l.location || 'Not Specified',
-    timeline: l.timeline || 'Immediate',
-    budget: l.estimatedBudget ? `₹${l.estimatedBudget} Lakhs` : 'To be estimated after site visit',
+    area: l.landArea && l.landArea.trim() !== '' ? l.landArea : 'Not specified',
+    location: l.location && l.location.trim() !== '' ? l.location : 'Not specified',
+    timeline: l.timeline && l.timeline.trim() !== '' ? l.timeline : 'Not specified',
+    budget: l.budgetRange && l.budgetRange.trim() !== '' 
+      ? l.budgetRange 
+      : (l.estimatedBudget && l.estimatedBudget > 0 ? `₹${l.estimatedBudget} Lakhs` : 'Not specified'),
     leadScore: l.leadScore || 80,
     status: l.status || 'Quotation Requested',
     date: l.createdAt || l.updatedAt || new Date().toISOString(),
