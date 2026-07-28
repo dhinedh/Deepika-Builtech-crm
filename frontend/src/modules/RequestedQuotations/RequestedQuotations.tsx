@@ -112,8 +112,10 @@ Our engineering team has reviewed your details and is ready to share customized 
             </h3>
           </div>
           <div className="bg-amber-50/60 border border-amber-200 p-4 rounded-xl">
-            <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">Sales Alerts Sent</p>
-            <h3 className="text-2xl font-black text-amber-950 mt-1">+91 93424 00879</h3>
+            <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">Sales Alerts Desk</p>
+            <h3 className="text-lg font-bold text-amber-950 mt-1 flex items-center gap-1.5">
+              <Phone size={16} className="text-amber-600" /> +91 93424 00879
+            </h3>
           </div>
         </div>
       </div>
@@ -122,7 +124,7 @@ Our engineering team has reviewed your details and is ready to share customized 
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-wrap justify-between items-center gap-4">
         <div className="flex items-center gap-3 flex-1 min-w-[280px]">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
               placeholder="Search by client name, phone number, or location..."
@@ -138,7 +140,7 @@ Our engineering team has reviewed your details and is ready to share customized 
           <select
             value={selectedServiceFilter}
             onChange={(e) => setSelectedServiceFilter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
           >
             <option value="All">All Services</option>
             <option value="PEB Warehouse">PEB Warehouse</option>

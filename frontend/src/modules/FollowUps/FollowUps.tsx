@@ -36,9 +36,14 @@ const FollowUps: React.FC = () => {
     return fallbackName || 'Client';
   };
 
-  const getChannelBadge = (phoneStr: string) => {
-    if (phoneStr.startsWith('ig:')) return { label: '📸 Instagram Direct', bg: 'bg-pink-100 text-pink-800 border-pink-300' };
-    if (phoneStr.startsWith('fb:')) return { label: '💬 Facebook Messenger', bg: 'bg-blue-100 text-blue-800 border-blue-300' };
+  const getChannelBadge = (phoneStr: string, sourceOrNote?: string) => {
+    const str = `${phoneStr} ${sourceOrNote || ''}`.toLowerCase();
+    if (str.includes('instagram') || phoneStr.startsWith('ig:')) {
+      return { label: '📸 Instagram Direct', bg: 'bg-pink-100 text-pink-800 border-pink-300' };
+    }
+    if (str.includes('facebook') || phoneStr.startsWith('fb:')) {
+      return { label: '💬 Facebook Messenger', bg: 'bg-blue-100 text-blue-800 border-blue-300' };
+    }
     return { label: '🟢 WhatsApp', bg: 'bg-green-100 text-green-800 border-green-300' };
   };
 
@@ -230,7 +235,7 @@ Reply to this message anytime to connect with our specialists!`;
                   {/* Render 3-Day Enquiries */}
                   {threeDaysDueEnquiries.map(enq => {
                     const daysAgo = differenceInDays(now, new Date(enq.updatedAt || enq.createdAt));
-                    const badge = getChannelBadge(enq.phone);
+                    const badge = getChannelBadge(enq.phone, (enq as any).channel || (enq as any).source || enq.lastMessage);
 
                     return (
                       <div key={enq.id} className="p-4 rounded-xl border border-amber-200 bg-amber-50/40 hover:bg-amber-50 flex flex-col justify-between gap-3 transition-all shadow-sm">
@@ -274,7 +279,7 @@ Reply to this message anytime to connect with our specialists!`;
                   {/* Render 3-Day Leads */}
                   {threeDaysDueLeads.map(lead => {
                     const daysAgo = differenceInDays(now, new Date((lead as any).updated_at || lead.updatedAt || (lead as any).created_at || lead.createdAt));
-                    const badge = getChannelBadge(lead.phone);
+                    const badge = getChannelBadge(lead.phone, lead.source || lead.notes);
 
                     return (
                       <div key={lead.id} className="p-4 rounded-xl border border-amber-200 bg-amber-50/40 hover:bg-amber-50 flex flex-col justify-between gap-3 transition-all shadow-sm">
