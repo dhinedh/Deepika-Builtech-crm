@@ -379,8 +379,6 @@ router.all('/whatsapp-bot-followup', async (req, res) => {
     console.error('[WhatsApp Bot Follow-Up Error]:', err);
     res.status(500).json({ error: err.message || 'Internal server error while processing follow-up' });
   }
-});cessing follow-up' });
-  }
 });
 
 
