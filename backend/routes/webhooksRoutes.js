@@ -260,12 +260,8 @@ router.all('/whatsapp-bot-lead', async (req, res) => {
       notes: `Captured from ${SourceChannel || leadSource}.\n${BudgetRange ? `Budget: ${BudgetRange}` : ''}`
     };
 
-    const existing = await Lead.findOne({ phone: finalPhone });
-    if (existing) {
-      await Lead.updateOne({ _id: existing._id }, { ...leadPayload, updated_at: new Date() });
-    } else {
-      await Lead.create(leadPayload);
-    }
+    // Always create a new lead document in MongoDB so older leads are preserved and never overridden
+    await Lead.create(leadPayload);
 
     writeLeadToLocalDb(leadPayload);
 
