@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import { supabase } from './config/supabase.js';
 import { requireAuth } from './middleware/authMiddleware.js';
 import { cacheMiddleware, clearCache } from './middleware/cacheMiddleware.js';
 import { startCronJobs } from './services/cronJobs.js';

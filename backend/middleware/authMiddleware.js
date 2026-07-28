@@ -1,7 +1,6 @@
-import { supabase } from '../config/supabase.js';
+import jwt from 'jsonwebtoken';
+import { User } from '../config/mongodb.js';
 
-// Only used for local development, e.g. `ALLOW_DEV_AUTH_BYPASS=true npm run dev`.
-// Never set this in Render's production environment variables.
 const ALLOW_DEV_AUTH_BYPASS = process.env.ALLOW_DEV_AUTH_BYPASS === 'true';
 
 export const requireAuth = async (req, res, next) => {
@@ -18,12 +17,22 @@ export const requireAuth = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
+    const secret = process.env.JWT_SECRET || 'your_super_secret_jwt_key_for_custom_tokens';
 
-    // Verify the JWT token for real with Supabase — no more hardcoded bypass.
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
+    let decoded;
+    try {
+      decoded = jwt.verify(token, secret);
+    } catch (e) {
       return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
+    }
+
+    let user = await User.findById(decoded.id);
+    if (!user && decoded.email) {
+      user = await User.findOne({ email: decoded.email });
+    }
+
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized: User not found' });
     }
 
     req.user = user;

@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import axios from 'axios';
-import { supabase } from '../config/supabase.js';
+import { Lead, Enquiry, FollowUp } from '../config/mongodb.js';
 import { sendWhatsAppMessage } from '../whatsappService.js';
 
 // In-memory store to prevent duplicate reminders if DB update fails (fallback)
@@ -73,8 +73,8 @@ export async function execute7DayReminderScan() {
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
   try {
-    // 1. Scan LEADS table
-    const { data: leads } = await supabase.from('leads').select('*');
+    // 1. Scan LEADS collection
+    const leads = await Lead.find();
     if (leads && leads.length > 0) {
       for (const lead of leads) {
         if (lead.status === 'Won' || lead.status === 'Lost') continue;
@@ -85,18 +85,17 @@ export async function execute7DayReminderScan() {
           const sent = await sendAuto7DayReminder(lead);
           if (sent) {
             sentCount++;
-            await supabase.from('leads').update({
-              last_contacted_at: now.toISOString(),
-              updated_at: now.toISOString(),
-              updatedAt: now.toISOString()
-            }).eq('id', lead.id);
+            await Lead.updateOne({ _id: lead._id }, {
+              last_contacted_at: now,
+              updated_at: now
+            });
           }
         }
       }
     }
 
-    // 2. Scan ENQUIRIES table
-    const { data: enquiries } = await supabase.from('enquiries').select('*');
+    // 2. Scan ENQUIRIES collection
+    const enquiries = await Enquiry.find();
     if (enquiries && enquiries.length > 0) {
       for (const enq of enquiries) {
         if (enq.status === 'Closed' || enq.status === 'Converted') continue;
@@ -107,11 +106,10 @@ export async function execute7DayReminderScan() {
           const sent = await sendAuto7DayReminder(enq);
           if (sent) {
             sentCount++;
-            await supabase.from('enquiries').update({
-              last_contacted_at: now.toISOString(),
-              updated_at: now.toISOString(),
-              updatedAt: now.toISOString()
-            }).eq('id', enq.id);
+            await Enquiry.updateOne({ _id: enq._id }, {
+              last_contacted_at: now,
+              updated_at: now
+            });
           }
         }
       }
@@ -140,57 +138,48 @@ export const startCronJobs = () => {
       const now = new Date();
       const inOneHour = new Date(now.getTime() + 60 * 60 * 1000);
 
-      const { data: followUps, error } = await supabase
-        .from('followups')
-        .select('*, leads(*)')
-        .eq('status', 'Pending')
-        .gte('scheduled_date', now.toISOString())
-        .lte('scheduled_date', inOneHour.toISOString());
-
-      if (error) throw error;
+      const followUps = await FollowUp.find({
+        status: 'Pending',
+        scheduled_date: { $gte: now, $lte: inOneHour }
+      });
 
       const adminPhone = process.env.ADMIN_PHONE || '910000000000';
 
       if (followUps && followUps.length > 0) {
         for (const fUp of followUps) {
+          const fUpId = fUp.id || fUp._id.toString();
           // Check in-memory fallback to prevent duplicates
-          if (sentReminders.has(fUp.id)) continue;
+          if (sentReminders.has(fUpId)) continue;
 
-          // Check DB flag (if the column exists and was set)
+          // Check DB flag
           if (fUp.reminder_sent === true) continue;
 
-          const clientPhone = fUp.leads?.phone || 'Unknown';
-          const clientName = fUp.leads?.contactName || 'Client';
+          const associatedLead = await Lead.findOne({ $or: [{ id: fUp.lead_id }, { _id: fUp.lead_id }] });
+          const clientPhone = associatedLead?.phone || 'Unknown';
+          const clientName = associatedLead?.contactName || 'Client';
           const timeStr = new Date(fUp.scheduled_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
           // 1. Send Reminder to Client
           await sendWhatsAppMessage(
             clientPhone,
             'meeting_reminder_client',
-            [clientName, fUp.type, timeStr]
+            [clientName, fUp.type || 'Meeting', timeStr]
           );
 
           // 2. Send Alert Reminder to ADMIN
           await sendWhatsAppMessage(
             adminPhone,
             'meeting_reminder_admin',
-            [clientName, fUp.type, timeStr]
+            [clientName, fUp.type || 'Meeting', timeStr]
           );
           
           console.log(`[Automated Message] Reminders sent for ${fUp.type} with ${clientName}`);
           
           // Prevent duplicate messages
-          sentReminders.add(fUp.id);
+          sentReminders.add(fUpId);
 
           // 3. Mark as sent in DB permanently
-          const { error: updateError } = await supabase
-            .from('followups')
-            .update({ reminder_sent: true })
-            .eq('id', fUp.id);
-
-          if (updateError) {
-             console.warn(`[Cron Warning] Failed to update reminder_sent for follow_up ${fUp.id}. Please ensure 'reminder_sent' boolean column exists in Supabase.`);
-          }
+          await FollowUp.updateOne({ _id: fUp._id }, { reminder_sent: true });
         }
       }
     } catch (err) {

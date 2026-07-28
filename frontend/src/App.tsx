@@ -1,7 +1,7 @@
 import React, { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
-import { supabase } from './services/supabase';
+import { authService } from './services/auth';
 import Layout from './components/Layout/Layout';
 
 // Direct synchronous imports for 0ms instant loading & zero chunk load errors
@@ -91,13 +91,13 @@ const App: React.FC = () => {
     };
 
     // Asynchronously restore session if present
-    supabase.auth.getSession()
+    authService.getSession()
       .then(({ data: { session } }) => {
         if (session?.user && session?.access_token) {
           useAuthStore.getState().login({
             id: session.user.id || (session.user as any)._id,
             email: session.user.email || '',
-            name: session.user.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
+            name: session.user.name || session.user.email?.split('@')[0]
           });
           fetchLiveData();
         }
@@ -110,12 +110,12 @@ const App: React.FC = () => {
     const pollInterval = setInterval(fetchLiveData, 10000);
 
     // Listen for auth state changes (sign-in, sign-out, session refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = authService.onAuthStateChange((event, session) => {
       if (session?.user && session?.access_token) {
         useAuthStore.getState().login({
           id: session.user.id || (session.user as any)._id,
           email: session.user.email || '',
-          name: session.user.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
+          name: session.user.name || session.user.email?.split('@')[0]
         });
         fetchLiveData();
       } else if (event === 'SIGNED_OUT') {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../../services/supabase';
+import { authService } from '../../services/auth';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import './Auth.css'; // Import the new Vanilla CSS file
@@ -19,7 +19,7 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await authService.signInWithPassword({ email, password });
       if (error || !data?.user) {
         throw new Error(error?.message || 'Invalid email or password');
       }
@@ -27,7 +27,7 @@ const Login: React.FC = () => {
       login({ 
         id: data.user.id || (data.user as any)._id, 
         email: data.user.email || '', 
-        name: data.user.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] 
+        name: data.user.name || (data.user as any).user_metadata?.full_name || data.user.email?.split('@')[0] 
       });
       navigate('/');
     } catch (err: any) {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../../services/supabase';
+import { authService } from '../../services/auth';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Mail, Lock, User, UserPlus, AlertCircle } from 'lucide-react';
 import './Auth.css'; // Import the new Vanilla CSS file
@@ -28,10 +28,10 @@ const Register: React.FC = () => {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({ 
+      const { data, error } = await authService.signUp({ 
         email, 
         password, 
-        options: { data: { full_name: name } } 
+        fullName: name 
       });
       if (error) throw error;
       
@@ -39,7 +39,7 @@ const Register: React.FC = () => {
         login({ 
           id: data.user.id, 
           email: data.user.email || '', 
-          name: data.user.user_metadata?.full_name || name 
+          name: data.user.name || name 
         });
         navigate('/');
       } else {

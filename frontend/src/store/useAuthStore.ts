@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../services/supabase';
+import { authService } from '../services/auth';
 
 interface User {
   id: string;
@@ -19,7 +19,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   login: (user) => set({ user, isAuthenticated: true }),
   logout: () => {
-    supabase.auth.signOut();
+    authService.signOut();
     set({ user: null, isAuthenticated: false });
   },
 }));
