@@ -100,7 +100,7 @@ Our engineering team has reviewed your details and is ready to share customized 
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
           <div className="bg-emerald-50/60 border border-emerald-200 p-4 rounded-xl">
             <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Total Quotation Leads</p>
             <h3 className="text-2xl font-black text-emerald-950 mt-1">{quoteRequests.length}</h3>
@@ -109,12 +109,6 @@ Our engineering team has reviewed your details and is ready to share customized 
             <p className="text-xs font-semibold text-blue-800 uppercase tracking-wider">PEB Warehouses</p>
             <h3 className="text-2xl font-black text-blue-950 mt-1">
               {quoteRequests.filter(q => q.service.includes('PEB')).length}
-            </h3>
-          </div>
-          <div className="bg-purple-50/60 border border-purple-200 p-4 rounded-xl">
-            <p className="text-xs font-semibold text-purple-800 uppercase tracking-wider">High Intent Leads</p>
-            <h3 className="text-2xl font-black text-purple-950 mt-1">
-              {quoteRequests.filter(q => q.leadScore >= 75).length}
             </h3>
           </div>
           <div className="bg-amber-50/60 border border-amber-200 p-4 rounded-xl">
@@ -169,9 +163,6 @@ Our engineering team has reviewed your details and is ready to share customized 
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5">{formatContactSubtitle(req.phone)}</p>
                   </div>
-                  <span className="bg-emerald-100 text-emerald-800 text-[0.68rem] font-bold px-2.5 py-0.5 rounded-full border border-emerald-300">
-                    Score: {req.leadScore}/100
-                  </span>
                 </div>
               </div>
 

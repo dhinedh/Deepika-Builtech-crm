@@ -90,7 +90,6 @@ const Leads: React.FC = () => {
               <th>Contact Name</th>
               <th>Company</th>
               <th>Project Type</th>
-              <th>Lead Score</th>
               <th>Status</th>
               <th>Created</th>
               <th>Actions</th>
@@ -108,11 +107,6 @@ const Leads: React.FC = () => {
                 </td>
                 <td>{lead.companyName}</td>
                 <td><span className="badge badge-info">{lead.projectType}</span></td>
-                <td>
-                  <div className={`score-badge ${getScoreColor(lead.leadScore)}`}>
-                    {lead.leadScore}
-                  </div>
-                </td>
                 <td>
                   <span className={`badge badge-${lead.status === 'Won' ? 'success' : lead.status === 'Lost' ? 'danger' : 'info'}`}>
                     {lead.status}
