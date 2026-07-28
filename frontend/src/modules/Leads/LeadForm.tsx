@@ -114,13 +114,23 @@ export const LeadForm: React.FC<LeadFormProps> = ({ onClose, initialData }) => {
           onChange={e => setFormData({...formData, source: e.target.value as LeadSource})}
         >
           <option value="Website Form">Website Form</option>
+          <option value="Justdial">Justdial</option>
+          <option value="IndiaMART">IndiaMART</option>
+          <option value="TradeIndia">TradeIndia</option>
+          <option value="Meta Ads">Meta Ads</option>
+          <option value="Google Ads">Google Ads</option>
+          <option value="WhatsApp Bot">WhatsApp Bot</option>
           <option value="WhatsApp">WhatsApp</option>
           <option value="Instagram DM">Instagram DM</option>
           <option value="Facebook Messenger">Facebook Messenger</option>
           <option value="Phone Call">Phone Call</option>
           <option value="Referral">Referral</option>
           <option value="Google Search">Google Search</option>
+          <option value="Site Walk-in">Site Walk-in</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="Trade Fair">Trade Fair</option>
         </select>
+
       </div>
       <div className="input-group">
         <label className="label">Status</label>

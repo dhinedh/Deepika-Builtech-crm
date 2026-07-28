@@ -304,11 +304,12 @@ router.post('/whatsapp-bot-lead', async (req, res) => {
       location: SiteLocation || '',
       landArea: AreaRequired || '',
       timeline: Timeline || '',
-      source: leadSource,
+      source: SourceChannel || leadSource || 'Justdial',
       status: LeadStatus || 'New',
       leadScore: LeadScore || 20,
-      notes: `Captured from Bot Flow.\nBudget: ${BudgetRange || 'Not confirmed'}`
+      notes: `Captured from ${SourceChannel || leadSource}.\nBudget: ${BudgetRange || 'Not confirmed'}`
     };
+
 
     const { error } = await supabase
       .from('leads')

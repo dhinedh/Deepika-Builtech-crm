@@ -101,6 +101,16 @@ export const sendOmniChannelMessage = async (
 };
 
 const HANDLE_MAP: Record<string, string> = {
+  '1015258211319714': '@wiinnniiieeee',
+  'sarath_kumar': '@sarath_kumar',
+  '1784299935924157': '@ghajaananjeyakumaran',
+  '1563709022151825': '@mr.sarath_kumar2528',
+  '1002343049293338': '@arostarblr',
+  '1098190455872049': '@griezzmusic',
+  '1356848385907899': '@kamalesh_alittlejohn',
+  '3535665503265080': '@svkcse1985',
+  '1622146982672826': '@jerome_jackxly',
+
   'ig:1015258211319714': '@wiinnniiieeee',
   'ig:sarath_kumar': '@sarath_kumar',
   'ig:1784299935924157': '@ghajaananjeyakumaran',
@@ -110,31 +120,42 @@ const HANDLE_MAP: Record<string, string> = {
   'ig:1356848385907899': '@kamalesh_alittlejohn',
   'ig:3535665503265080': '@svkcse1985',
   'ig:1622146982672826': '@jerome_jackxly',
-  '919342400879': '+91 93424 00879 (Admin Verification)',
-  '919840198765': '+91 98401 98765 (WhatsApp)',
-  '919876512345': '+91 98765 12345 (WhatsApp)'
+
+  '@1015258211319714': '@wiinnniiieeee',
+  '@sarath_kumar': '@sarath_kumar',
+  '@1784299935924157': '@ghajaananjeyakumaran',
+  '@1563709022151825': '@mr.sarath_kumar2528',
+  '@1002343049293338': '@arostarblr',
+  '@1098190455872049': '@griezzmusic',
+  '@1356848385907899': '@kamalesh_alittlejohn',
+  '@3535665503265080': '@svkcse1985',
+  '@1622146982672826': '@jerome_jackxly',
 };
 
 export function formatContactSubtitle(phone: string): string {
   if (!phone) return '';
-  if (HANDLE_MAP[phone]) return HANDLE_MAP[phone];
+  const key = phone.trim();
+  if (HANDLE_MAP[key]) return HANDLE_MAP[key];
 
-  if (phone.startsWith('ig:')) {
-    const handle = phone.replace(/^ig:/, '');
-    return handle.startsWith('@') ? handle : `@${handle}`;
+  const strippedKey = key.replace(/^(ig:|@)/i, '');
+  if (HANDLE_MAP[strippedKey]) return HANDLE_MAP[strippedKey];
+
+  if (key.startsWith('ig:') || key.startsWith('@')) {
+    const handle = key.replace(/^(ig:|@)/i, '');
+    return `@${handle}`;
   }
-  if (phone.startsWith('fb:')) {
-    const handle = phone.replace(/^fb:/, '');
-    return `FB: ${handle}`;
+  if (key.startsWith('fb:')) {
+    return `FB: ${key.replace(/^fb:/i, '')}`;
   }
 
-  const clean = phone.replace(/\D/g, '');
+  const clean = key.replace(/\D/g, '');
   if (clean.length === 12 && clean.startsWith('91')) {
     return `+91 ${clean.slice(2, 7)} ${clean.slice(7)}`;
   }
   if (clean.length === 10) {
     return `+91 ${clean.slice(0, 5)} ${clean.slice(5)}`;
   }
-  return phone;
+  return key;
 }
+
 
