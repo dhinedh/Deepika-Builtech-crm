@@ -66,3 +66,40 @@ export const sendWhatsAppMessage = async (phone, templateId, parameters) => {
 export const sendFollowUpLead = async (phone, customerName) => {
   return await sendWhatsAppMessage(phone, 'follow_up_lead', [customerName]);
 };
+
+/**
+ * Send direct free-form text message via Meta WhatsApp Cloud API
+ */
+export const sendDirectWhatsAppText = async (phone, text) => {
+  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
+    console.error('[WhatsApp API] Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID in .env');
+    return { success: false, error: 'Configuration missing' };
+  }
+  try {
+    const formattedPhone = phone.replace(/\D/g, '');
+    const finalPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
+
+    const response = await axios.post(
+      `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
+      {
+        messaging_product: "whatsapp",
+        to: finalPhone,
+        type: "text",
+        text: { body: text }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    console.log(`[WhatsApp Direct API] Successfully sent direct message to ${finalPhone}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    const errorMsg = error.response?.data?.error?.message || error.message;
+    console.error(`[WhatsApp Direct API Error]:`, errorMsg);
+    return { success: false, error: errorMsg };
+  }
+};
+

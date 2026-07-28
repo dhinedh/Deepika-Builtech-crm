@@ -1,9 +1,10 @@
 import express from 'express';
 import axios from 'axios';
 import { supabase } from '../config/supabase.js';
-import { sendFollowUpLead } from '../whatsappService.js';
+import { sendFollowUpLead, sendDirectWhatsAppText } from '../whatsappService.js';
 
 const router = express.Router();
+
 
 /**
  * Helper to fetch Facebook/Instagram user profile name using Page/IG access token
@@ -407,12 +408,40 @@ router.post('/whatsapp-bot-followup', async (req, res) => {
       return res.status(400).json({ error: 'Missing WhatsApp number' });
     }
 
+    const messageText = FollowUpText || `👋 *Hello ${CustomerName || 'Valued Client'} from Deepika Builtech Engineering!*\n\nWe are following up regarding your enquiry for PEB & warehouse construction services.\n\nOur engineering team is ready to assist you with a free site consultation and cost estimate. 🏗️\n\n📞 Call / WhatsApp: +91 96000 67611 / +91 98844 87938\n🌐 deepikabuiltech.com`;
+
+    // 1. Dispatch actual message to customer via WhatsApp or Meta Cloud API
+    const isIG = WhatsAppNumber.startsWith('ig:');
+    const isFB = WhatsAppNumber.startsWith('fb:');
+    let messageSent = false;
+
+    if (isIG || isFB) {
+      const recipientId = WhatsAppNumber.replace(/^(ig:|fb:)/, '');
+      const token = process.env.PAGE_ACCESS_TOKEN || process.env.INSTAGRAM_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN;
+      try {
+        await axios.post(
+          'https://graph.facebook.com/v20.0/me/messages',
+          { recipient: { id: recipientId }, message: { text: messageText } },
+          { params: { access_token: token } }
+        );
+        messageSent = true;
+        console.log(`✅ [CRM Outbound Meta DM Delivered] to ${WhatsAppNumber}`);
+      } catch (errMeta) {
+        console.warn(`⚠️ [CRM Meta Follow-Up Notice]:`, errMeta.response?.data || errMeta.message);
+      }
+    } else {
+      const resWhatsApp = await sendDirectWhatsAppText(WhatsAppNumber, messageText);
+      messageSent = resWhatsApp.success;
+      if (messageSent) console.log(`✅ [CRM Outbound WhatsApp Delivered] to ${WhatsAppNumber}`);
+    }
+
+    // 2. Insert Follow-up record into Supabase followups table
     const newFollowUp = {
       title: `7-Day Follow-Up: ${CustomerName || WhatsAppNumber}`,
-      type: Channel || (WhatsAppNumber.startsWith('ig:') ? 'Instagram DM' : WhatsAppNumber.startsWith('fb:') ? 'Facebook Messenger' : 'WhatsApp'),
+      type: Channel || (isIG ? 'Instagram DM' : isFB ? 'Facebook Messenger' : 'WhatsApp'),
       scheduled_date: new Date().toISOString(),
       status: 'Completed',
-      notes: FollowUpText || `Automated 7-day follow-up message delivered to ${CustomerName || WhatsAppNumber}`
+      notes: messageText
     };
 
     const { data, error } = await supabase
@@ -422,16 +451,22 @@ router.post('/whatsapp-bot-followup', async (req, res) => {
 
     if (error) {
       console.error('[WhatsApp Bot Follow-Up Webhook DB Error]:', error.message);
-      return res.status(500).json({ error: error.message });
     }
 
-    console.log(`[WhatsApp Bot Follow-Up Webhook] Created new follow-up record for ${newFollowUp.title}`);
-    res.status(201).json({ success: true, data: data[0] });
+    // 3. Update last_contacted_at in leads table
+    await supabase.from('leads').update({
+      last_contacted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).eq('phone', WhatsAppNumber);
+
+    console.log(`[WhatsApp Bot Follow-Up Webhook] Completed follow-up for ${newFollowUp.title}`);
+    res.status(200).json({ success: true, message: 'Follow-up message dispatched and logged to CRM!' });
   } catch (err) {
     console.error('[WhatsApp Bot Follow-Up Webhook Error]:', err);
-    res.status(500).json({ error: err.message || 'Internal server error while inserting follow-up' });
+    res.status(500).json({ error: err.message || 'Internal server error while processing follow-up' });
   }
 });
+
 
 /**
  * POST endpoint to send direct messages to Instagram DM or Facebook Messenger
