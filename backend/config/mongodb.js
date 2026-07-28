@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
 
@@ -28,10 +30,41 @@ export const connectDB = async () => {
         console.log(`✅ Default Admin user created: ${email} / admin123`);
       }
     }
+
+    // Auto-seed initial leads, enquiries & contacts from db.json if missing in MongoDB
+    try {
+      const dbPath = path.resolve('db.json');
+      if (fs.existsSync(dbPath)) {
+        const raw = fs.readFileSync(dbPath, 'utf8');
+        const fileDb = JSON.parse(raw);
+
+        if (fileDb.leads && Array.isArray(fileDb.leads)) {
+          for (const item of fileDb.leads) {
+            const query = item.id ? { $or: [{ id: item.id }, { phone: item.phone }] } : { phone: item.phone };
+            const existing = await Lead.findOne(query);
+            if (!existing) {
+              await Lead.create(item);
+            }
+          }
+        }
+
+        if (fileDb.enquiries && Array.isArray(fileDb.enquiries)) {
+          for (const item of fileDb.enquiries) {
+            const query = item.id ? { $or: [{ id: item.id }, { phone: item.phone }] } : { phone: item.phone };
+            const existing = await Enquiry.findOne(query);
+            if (!existing) {
+              await Enquiry.create(item);
+            }
+          }
+        }
+      }
+    } catch (seedErr) {
+      console.warn('⚠️ Seeding initial leads/enquiries from db.json failed:', seedErr.message);
+    }
   } catch (error) {
     console.error('❌ MongoDB Connection Error:', error.message);
   }
-// Define Mongoose Schemas & Models
+};// Define Mongoose Schemas & Models
 const LeadSchema = new mongoose.Schema({
   id: { type: String },
   contactName: String,

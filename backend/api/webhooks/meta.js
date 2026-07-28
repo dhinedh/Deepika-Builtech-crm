@@ -1,4 +1,4 @@
-import { supabase } from '../../config/supabase.js';
+import { Lead, Enquiry, Contact } from '../../config/mongodb.js';
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
@@ -152,20 +152,14 @@ async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messag
       sessionData.real_phone = detectedPhone;
     }
 
-    // ---- LEADS table ----
-    const { data: existingLeads } = await supabase
-      .from('leads')
-      .select('id,phone,projectType,companyName,location,landArea')
-      .or(`phone.eq.${phoneIdentifier},phone.eq.${realPhone}`);
-
-    const lead = existingLeads && existingLeads.length > 0 ? existingLeads[0] : null;
-
+    // ---- LEADS collection ----
+    const lead = await Lead.findOne({ $or: [{ phone: phoneIdentifier }, { phone: realPhone }] });
     let leadRecord = null;
 
     if (lead) {
       const updates = { 
-        updated_at: now, 
-        updatedAt: now,
+        updated_at: new Date(), 
+        updatedAt: new Date(),
         notes: `Latest message: "${messageText.substring(0, 300)}"`
       };
       if (detectedPhone && lead.phone !== detectedPhone) {
@@ -190,8 +184,8 @@ async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messag
         updates.projectType = sessionData.selected_service;
       }
 
-      await supabase.from('leads').update(updates).eq('id', lead.id);
-      leadRecord = { ...lead, ...updates };
+      await Lead.updateOne({ _id: lead._id }, updates);
+      leadRecord = { ...lead.toObject(), ...updates };
       console.log(`[CRM Sync] Updated lead for ${customerName} (${realPhone})`);
     } else {
       const isRichInquiry = detectedProjectType && (detectedArea || detectedLoc);
@@ -212,22 +206,19 @@ async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messag
         notes:       `Captured via ${source}.\nFirst message: "${messageText.substring(0, 300)}"`,
         createdAt:   now,
         updatedAt:   now,
-        created_at:  now,
-        updated_at:  now
+        created_at:  new Date(),
+        updated_at:  new Date()
       };
 
-      await supabase.from('leads').insert([leadRecord]);
+      await Lead.create(leadRecord);
       console.log(`[CRM Sync] Created new lead for ${customerName} (${realPhone})`);
     }
 
     // Direct guarantee write to db.json
     saveToLocalDbJson('leads', leadRecord);
 
-    // ---- ENQUIRIES table ----
-    const { data: existingEnq } = await supabase
-      .from('enquiries')
-      .select('id')
-      .or(`phone.eq.${phoneIdentifier},phone.eq.${realPhone}`);
+    // ---- ENQUIRIES collection ----
+    const existingEnq = await Enquiry.findOne({ $or: [{ phone: phoneIdentifier }, { phone: realPhone }] });
 
     const enqRecord = {
       id:          `enq-${platform.slice(0,2)}-${Date.now()}`,
@@ -238,31 +229,28 @@ async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messag
       status:      'New',
       createdAt:   now,
       updatedAt:   now,
-      created_at:  now,
-      updated_at:  now
+      created_at:  new Date(),
+      updated_at:  new Date()
     };
 
-    if (existingEnq && existingEnq.length > 0) {
-      await supabase.from('enquiries').update({
+    if (existingEnq) {
+      await Enquiry.updateOne({ _id: existingEnq._id }, {
         phone:       realPhone,
         lastMessage: messageText.substring(0, 500),
-        updated_at:  now,
+        updated_at:  new Date(),
         updatedAt:   now
-      }).eq('id', existingEnq[0].id);
-      saveToLocalDbJson('enquiries', { ...existingEnq[0], ...enqRecord });
+      });
+      saveToLocalDbJson('enquiries', { ...existingEnq.toObject(), ...enqRecord });
     } else {
-      await supabase.from('enquiries').insert([enqRecord]);
+      await Enquiry.create(enqRecord);
       saveToLocalDbJson('enquiries', enqRecord);
     }
 
-    // ---- CONTACTS table ----
-    const { data: existingContacts } = await supabase
-      .from('contacts')
-      .select('id')
-      .or(`phone.eq.${phoneIdentifier},phone.eq.${realPhone}`);
+    // ---- CONTACTS collection ----
+    const existingContact = await Contact.findOne({ $or: [{ phone: phoneIdentifier }, { phone: realPhone }] });
 
-    if (!existingContacts || existingContacts.length === 0) {
-      await supabase.from('contacts').insert([{
+    if (!existingContact) {
+      await Contact.create({
         id:             `con-${platform.slice(0,2)}-${Date.now()}`,
         fullName:       customerName,
         phone:          realPhone,
@@ -272,9 +260,9 @@ async function syncCRMFromChat({ phoneIdentifier, customerName, platform, messag
         industry:       'Construction / PEB',
         createdAt:      now,
         updatedAt:      now,
-        created_at:     now,
-        updated_at:     now
-      }]);
+        created_at:     new Date(),
+        updated_at:     new Date()
+      });
     }
 
   } catch (err) {
@@ -569,11 +557,11 @@ async function handleMetaChatbot(senderId, recipientId, platform, messageText, c
     session.quote_step = 0;
     const score = calculateLeadScore(session);
 
-    // Save completed lead into Supabase
+    // Save completed lead into MongoDB
     try {
-      const { data: existingLeads } = await supabase.from('leads').select('id').eq('phone', phoneIdentifier);
-      if (existingLeads && existingLeads.length > 0) {
-        await supabase.from('leads').update({
+      const existingLead = await Lead.findOne({ phone: phoneIdentifier });
+      if (existingLead) {
+        await Lead.updateOne({ _id: existingLead._id }, {
           contactName: customerName,
           projectType: session.selected_service,
           location: session.site_location,
@@ -582,10 +570,10 @@ async function handleMetaChatbot(senderId, recipientId, platform, messageText, c
           leadScore: score,
           status: 'New',
           notes: `Completed Quote Flow via ${platform.toUpperCase()}.\nBudget: ${session.budget_range}`,
-          updated_at: new Date().toISOString()
-        }).eq('phone', phoneIdentifier);
+          updated_at: new Date()
+        });
       } else {
-        await supabase.from('leads').insert([{
+        await Lead.create({
           contactName: customerName,
           phone: phoneIdentifier,
           projectType: session.selected_service,
@@ -596,10 +584,10 @@ async function handleMetaChatbot(senderId, recipientId, platform, messageText, c
           status: 'New',
           leadScore: score,
           notes: `Captured via ${platform.toUpperCase()} Chatbot Quote Flow.\nBudget: ${session.budget_range}`
-        }]);
+        });
       }
     } catch (dbErr) {
-      console.error('[Supabase Lead Save Error]:', dbErr.message);
+      console.error('[MongoDB Lead Save Error]:', dbErr.message);
     }
 
     const summary = `🎉 *Thank you for your patience!*\n\nWe have received all your details.\nHere is a summary of your requirement:\n\n━━━━━━━━━━━━━━━━━\n🔧 *Service:* ${session.selected_service}\n📐 *Area Required:* ${session.area_required}\n📍 *Site Location:* ${session.site_location}\n📅 *Timeline:* ${session.project_timeline}\n💰 *Budget:* ${session.budget_range}\n━━━━━━━━━━━━━━━━━\n\n✅ Your information has been updated to our project team.\n\n📞 You will receive a *personal call back within 2 hours* from our team.\n\nThank you for choosing *Deepika Builtech Engineering!* 🏗️\n\n_📞 +91 96000 67611_\n_🌐 deepikabuiltech.com_`;
@@ -691,26 +679,24 @@ export default async function handler(req, res) {
           const customerName = contact?.profile?.name || 'Customer';
 
           // Check Duplicates
-          const { data: existingLeads } = await supabase.from('leads').select('id').eq('phone', phone);
-          const { data: existingContacts } = await supabase.from('contacts').select('id').eq('phone', phone);
-          const isExisting = (existingLeads?.length > 0) || (existingContacts?.length > 0);
+          const existingLead = await Lead.findOne({ phone });
+          const existingContact = await Contact.findOne({ phone });
+          const isExisting = !!existingLead || !!existingContact;
 
           if (!isExisting) {
             const keywords = ['hi', 'hello', 'interested', 'price', 'cost', 'quote', 'details', 'buy', 'service', 'help', 'inquiry'];
             const isLeadIntent = keywords.some(kw => messageText.includes(kw)) || messageText === '';
 
             if (isLeadIntent) {
-              const { error } = await supabase.from('leads').insert([{
+              await Lead.create({
                 contactName:  customerName,
                 phone:        phone,
                 source:       'WhatsApp',
                 status:       'New',
                 notes:        `Inquiry: ${msg.text?.body || 'Media'}`
-              }]);
+              });
 
-              if (!error) {
-                await sendFollowUpLead(phone, customerName);
-              }
+              await sendFollowUpLead(phone, customerName);
             }
           }
         }

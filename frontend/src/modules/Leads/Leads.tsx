@@ -24,20 +24,32 @@ const Leads: React.FC = () => {
     fetchLeads();
   }, []);
   const [statusFilter, setStatusFilter] = useState('All');
+  const [sourceFilter, setSourceFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.contactName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         lead.phone.includes(searchTerm);
+                         (lead.phone && lead.phone.includes(searchTerm)) ||
+                         (lead.source && lead.source.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'All' || lead.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesSource = sourceFilter === 'All' || 
+                         (lead.source && lead.source.toLowerCase().includes(sourceFilter.toLowerCase()));
+    return matchesSearch && matchesStatus && matchesSource;
   });
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return 'success';
     if (score >= 40) return 'warning';
     return 'danger';
+  };
+
+  const getSourceBadgeClass = (source?: string) => {
+    const s = (source || '').toLowerCase();
+    if (s.includes('facebook') || s.includes('messenger')) return 'badge-facebook';
+    if (s.includes('instagram') || s.includes('ig')) return 'badge-instagram';
+    if (s.includes('whatsapp')) return 'badge-whatsapp';
+    return 'badge-info';
   };
 
   return (
@@ -48,7 +60,7 @@ const Leads: React.FC = () => {
             <Search size={18} />
             <input 
               type="text" 
-              placeholder="Search by name or phone..." 
+              placeholder="Search by name, phone or source..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -65,6 +77,16 @@ const Leads: React.FC = () => {
               <option value="Qualified">Qualified</option>
               <option value="Quotation Sent">Quotation Sent</option>
               <option value="Won">Won</option>
+            </select>
+            <select 
+              className="select" 
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+            >
+              <option value="All">All Sources</option>
+              <option value="Facebook">Facebook Messenger</option>
+              <option value="Instagram">Instagram DM</option>
+              <option value="WhatsApp">WhatsApp</option>
             </select>
             <button className="btn btn-secondary">
               <Filter size={18} /> Filter
@@ -88,6 +110,7 @@ const Leads: React.FC = () => {
             <tr>
               <th>Lead ID</th>
               <th>Contact Name</th>
+              <th>Source</th>
               <th>Company</th>
               <th>Project Type</th>
               <th>Status</th>
@@ -105,7 +128,12 @@ const Leads: React.FC = () => {
                     <span className="muted-text">{formatContactSubtitle(lead.phone)}</span>
                   </div>
                 </td>
-                <td>{lead.companyName}</td>
+                <td>
+                  <span className={`badge ${getSourceBadgeClass(lead.source)}`}>
+                    {lead.source || 'Direct Enquiry'}
+                  </span>
+                </td>
+                <td>{lead.companyName || '—'}</td>
                 <td><span className="badge badge-info">{lead.projectType}</span></td>
                 <td>
                   <span className={`badge badge-${lead.status === 'Won' ? 'success' : lead.status === 'Lost' ? 'danger' : 'info'}`}>

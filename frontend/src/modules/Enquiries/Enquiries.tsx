@@ -16,6 +16,7 @@ const Enquiries: React.FC = () => {
   const { enquiries, fetchEnquiries } = useCRMStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [sourceFilter, setSourceFilter] = useState('All');
   const [isSyncing, setIsSyncing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [prefilledLeadData, setPrefilledLeadData] = useState<any>(null);
@@ -51,8 +52,8 @@ const Enquiries: React.FC = () => {
       projectType: 'PEB Warehouse',
       location: '',
       timeline: 'Immediate',
-      source: 'WhatsApp',
-      notes: `Converted from WhatsApp Enquiry: "${enquiry.lastMessage}"`
+      source: enquiry.source || 'Facebook Messenger',
+      notes: `Converted from ${enquiry.source || 'Enquiry'}: "${enquiry.lastMessage}"`
     });
     setIsModalOpen(true);
   };
@@ -63,23 +64,34 @@ const Enquiries: React.FC = () => {
     window.open(`https://wa.me/${formattedPhone}`, '_blank');
   };
 
+  const getSourceBadgeClass = (source?: string) => {
+    const s = (source || '').toLowerCase();
+    if (s.includes('facebook') || s.includes('messenger')) return 'badge-facebook';
+    if (s.includes('instagram') || s.includes('ig')) return 'badge-instagram';
+    if (s.includes('whatsapp')) return 'badge-whatsapp';
+    return 'badge-info';
+  };
+
   const filteredEnquiries = enquiries.filter(item => {
     const matchesSearch = 
       item.contactName.toLowerCase().includes(searchTerm.toLowerCase()) || 
       item.phone.includes(searchTerm) || 
-      item.lastMessage.toLowerCase().includes(searchTerm.toLowerCase());
+      item.lastMessage.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ((item as any).source && (item as any).source.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
+    const matchesSource = sourceFilter === 'All' || 
+                         ((item as any).source && (item as any).source.toLowerCase().includes(sourceFilter.toLowerCase()));
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesSource;
   });
 
   return (
     <div className="enquiries-module">
       <div className="module-header">
         <div className="header-title-section">
-          <h2>WhatsApp Greetings & General Enquiries</h2>
-          <p className="muted-text">Real-time incoming customer contacts from Deepika WhatsApp Chatbot.</p>
+          <h2>WhatsApp, Facebook Messenger & Instagram Enquiries</h2>
+          <p className="muted-text">Real-time incoming customer contacts across Meta social platforms & WhatsApp.</p>
         </div>
         
         <button 
@@ -96,7 +108,7 @@ const Enquiries: React.FC = () => {
           <Search size={18} />
           <input 
             type="text" 
-            placeholder="Search by name, phone or message text..." 
+            placeholder="Search by name, phone, source or message..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -113,6 +125,16 @@ const Enquiries: React.FC = () => {
             <option value="Converted">Converted to Lead</option>
             <option value="Ignored">Ignored</option>
           </select>
+          <select 
+            className="select" 
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+          >
+            <option value="All">All Sources</option>
+            <option value="Facebook">Facebook Messenger</option>
+            <option value="Instagram">Instagram DM</option>
+            <option value="WhatsApp">WhatsApp</option>
+          </select>
         </div>
       </div>
 
@@ -121,14 +143,15 @@ const Enquiries: React.FC = () => {
           <div className="empty-state">
             <MessageSquare size={48} className="empty-icon" />
             <h3>No enquiries found</h3>
-            <p>Any incoming greeting (like "hi") to your WhatsApp Bot will instantly appear here.</p>
+            <p>Incoming messages from Facebook Messenger, Instagram, or WhatsApp will appear here.</p>
           </div>
         ) : (
           <table>
             <thead>
               <tr>
                 <th>Customer Profile</th>
-                <th>Phone Number</th>
+                <th>Source</th>
+                <th>Phone / Handle</th>
                 <th>Last Message Text</th>
                 <th>Status</th>
                 <th>Received Time</th>
@@ -143,6 +166,11 @@ const Enquiries: React.FC = () => {
                       <div className="avatar">{item.contactName.charAt(0).toUpperCase()}</div>
                       <span className="font-600">{item.contactName}</span>
                     </div>
+                  </td>
+                  <td>
+                    <span className={`badge ${getSourceBadgeClass((item as any).source)}`}>
+                      {(item as any).source || 'Facebook Messenger'}
+                    </span>
                   </td>
                   <td><span className="phone-badge">{formatContactSubtitle(item.phone)}</span></td>
                   <td className="message-cell">
