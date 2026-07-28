@@ -81,41 +81,43 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App: React.FC = () => {
   useEffect(() => {
-    // Automatically fetch live database leads, enquiries & contacts on app startup
-    useCRMStore.getState().fetchLeads();
-    useCRMStore.getState().fetchEnquiries();
-    if (useCRMStore.getState().fetchContacts) useCRMStore.getState().fetchContacts();
+    const fetchLiveData = () => {
+      // ONLY fetch live data if user is logged in with an active session
+      if (useAuthStore.getState().isAuthenticated) {
+        useCRMStore.getState().fetchLeads();
+        useCRMStore.getState().fetchEnquiries();
+        if (useCRMStore.getState().fetchContacts) useCRMStore.getState().fetchContacts();
+      }
+    };
 
-    // Auto-poll live database every 10 seconds so new incoming leads appear automatically
-    const pollInterval = setInterval(() => {
-      useCRMStore.getState().fetchLeads();
-      useCRMStore.getState().fetchEnquiries();
-      if (useCRMStore.getState().fetchContacts) useCRMStore.getState().fetchContacts();
-    }, 10000);
-
-    // Asynchronously restore session if present without blocking initial page render
+    // Asynchronously restore session if present
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
-        if (session?.user) {
+        if (session?.user && session?.access_token) {
           useAuthStore.getState().login({
-            id: session.user.id,
+            id: session.user.id || (session.user as any)._id,
             email: session.user.email || '',
-            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
+            name: session.user.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
           });
+          fetchLiveData();
         }
       })
       .catch((error) => {
-        console.error("Failed to restore Supabase session on startup:", error);
+        console.error("Failed to restore session on startup:", error);
       });
+
+    // Auto-poll live database every 10 seconds ONLY if authenticated
+    const pollInterval = setInterval(fetchLiveData, 10000);
 
     // Listen for auth state changes (sign-in, sign-out, session refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
+      if (session?.user && session?.access_token) {
         useAuthStore.getState().login({
-          id: session.user.id,
+          id: session.user.id || (session.user as any)._id,
           email: session.user.email || '',
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
+          name: session.user.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
         });
+        fetchLiveData();
       } else if (event === 'SIGNED_OUT') {
         useAuthStore.getState().logout();
       }

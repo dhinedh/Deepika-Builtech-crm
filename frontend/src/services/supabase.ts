@@ -47,21 +47,13 @@ export const supabase = {
           throw new Error(result.error || 'Invalid email or password');
         }
         const session = {
-          access_token: result.session?.access_token || 'demo-token',
+          access_token: result.session?.access_token,
           user: result.user
         };
         setStoredSession(session);
         notifyListeners('SIGNED_IN', session);
         return { data: { session, user: result.user }, error: null };
       } catch (err: any) {
-        // Fallback for offline / dev demo user
-        if (email && password) {
-          const fallbackUser = { id: 'user-demo-1', email, name: email.split('@')[0], role: 'Admin' };
-          const fallbackSession = { access_token: 'demo-jwt-token', user: fallbackUser };
-          setStoredSession(fallbackSession);
-          notifyListeners('SIGNED_IN', fallbackSession);
-          return { data: { session: fallbackSession, user: fallbackUser }, error: null };
-        }
         return { data: null, error: err };
       }
     },
@@ -116,9 +108,9 @@ export const supabase = {
   },
   from: (tableName: string) => {
     return {
-      select: () => ({
-        order: () => Promise.resolve({ data: [], error: null }),
-        eq: () => ({
+      select: (_fields?: string) => ({
+        order: (_column?: string, _options?: any) => Promise.resolve({ data: [], error: null }),
+        eq: (_column?: string, _value?: any) => ({
           single: () => Promise.resolve({ data: null, error: null })
         }),
         then: (resolve: any) => resolve({ data: [], error: null })

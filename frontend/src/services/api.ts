@@ -1,13 +1,14 @@
 import { supabase } from './supabase';
+import { useAuthStore } from '../store/useAuthStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://deepika-builtech-crm-4jj1.onrender.com/api';
 
 /**
- * Secure fetch wrapper that automatically attaches the Supabase JWT access token
+ * Secure fetch wrapper that automatically attaches the JWT access token
  * to every HTTP request. Centralizing this logic ensures high security for all data fetching.
  */
 export const secureFetch = async (endpoint: string, options: RequestInit = {}) => {
-  // Get current session securely from Supabase
+  // Get current session securely
   const { data: { session } } = await supabase.auth.getSession();
   
   const headers = new Headers(options.headers || {});
@@ -22,6 +23,13 @@ export const secureFetch = async (endpoint: string, options: RequestInit = {}) =
     ...options,
     headers,
   });
+
+  if (response.status === 401) {
+    // Clean up local session and logout state if token is unauthorized/invalid/expired
+    await supabase.auth.signOut();
+    useAuthStore.getState().logout();
+    throw new Error('Unauthorized: Invalid or expired token');
+  }
 
   if (!response.ok) {
     let errorMsg = `API Error: ${response.status}`;

@@ -20,28 +20,17 @@ const Login: React.FC = () => {
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      if (error || !data?.user) {
+        throw new Error(error?.message || 'Invalid email or password');
+      }
       
-      if (data?.user) {
-        login({ 
-          id: data.user.id, 
-          email: data.user.email || '', 
-          name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] 
-        });
-        navigate('/');
-        return;
-      }
+      login({ 
+        id: data.user.id || (data.user as any)._id, 
+        email: data.user.email || '', 
+        name: data.user.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] 
+      });
+      navigate('/');
     } catch (err: any) {
-      // Fallback: If Supabase connection fails or is offline, allow demo/local login
-      if (email) {
-        login({
-          id: 'admin-user-id',
-          email: email,
-          name: email.split('@')[0] || 'Admin User'
-        });
-        navigate('/');
-        return;
-      }
       setError(err.message || 'Failed to login');
     } finally {
       setLoading(false);

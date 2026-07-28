@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
@@ -10,6 +11,19 @@ export const connectDB = async () => {
     if (mongoose.connection.readyState >= 1) return;
     await mongoose.connect(MONGO_URI);
     console.log('✅ Connected to MongoDB Atlas (whatsapp-crm)');
+
+    // Auto-seed default admin user if none exists
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await User.create({
+        email: 'admin@deepikabuiltech.com',
+        password: hashedPassword,
+        name: 'Admin User',
+        role: 'Admin'
+      });
+      console.log('✅ Default Admin user created: admin@deepikabuiltech.com / admin123');
+    }
   } catch (error) {
     console.error('❌ MongoDB Connection Error:', error.message);
   }
