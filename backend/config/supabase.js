@@ -5,13 +5,32 @@ import path from 'path';
 
 dotenv.config();
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://lwacdwackjnifrjgkrom.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3YWNkd2Fja2puaWZyamdrcm9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njk1MzA4NiwiZXhwIjoyMDkyNTI5MDg2fQ.xeri6TvyfMfTz171-o4AzREzCIBAPeuT2lfrqh8fBrM';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
 
-// Try creating real client
-const realClient = createClient(supabaseUrl, supabaseKey);
+// NOTE: There is intentionally no hardcoded fallback URL/key here anymore.
+// The previous version fell back to a real service_role key committed to git
+// (a public repo), which is a critical security exposure. Set SUPABASE_URL
+// and SUPABASE_KEY as environment variables on Render (and in backend/.env
+// for local dev, which is gitignored) instead.
+if (!supabaseUrl || !supabaseKey) {
+  console.error(
+    '[Supabase Config] FATAL: SUPABASE_URL and/or SUPABASE_KEY are not set. ' +
+    'Set them as environment variables on your host (Render dashboard -> Environment) ' +
+    'or in backend/.env for local development. The app cannot reach the real database without them.'
+  );
+}
 
-// Local JSON File Database for offline/network resilience
+const realClient = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+
+// Only used when explicitly enabled below — never a silent default.
+// Set ALLOW_LOCAL_FALLBACK=true only for local/offline development.
+// Leaving this OFF in production means a broken Supabase connection surfaces
+// as a real 500 error (visible, fixable) instead of leads quietly vanishing
+// into a local file that gets reset on every deploy.
+const ALLOW_LOCAL_FALLBACK = process.env.ALLOW_LOCAL_FALLBACK === 'true';
+
+// Local JSON File Database — dev/offline use only, gated by ALLOW_LOCAL_FALLBACK.
 class LocalJsonClient {
   constructor() {
     this.dbPath = path.resolve('db.json');
@@ -160,60 +179,83 @@ class LocalJsonClient {
   }
 }
 
-const localClient = new LocalJsonClient();
+const localClient = ALLOW_LOCAL_FALLBACK ? new LocalJsonClient() : null;
 
-// Helper to recursively wrap Supabase query builders with full transaction tracking
+// Wraps a real Supabase query builder so failures are logged with their real
+// reason, and (only if ALLOW_LOCAL_FALLBACK is on) optionally replayed locally.
 function wrapSupabaseBuilder(builderInstance, tableName, actionInfo = { action: 'select', data: null, filters: [] }) {
   return new Proxy(builderInstance, {
     get(target, prop) {
       const value = target[prop];
-      
+
       if (prop === 'then') {
-        return function(resolve, reject) {
+        return function (resolve, reject) {
           return value.call(target, (response) => {
             if (response && response.error) {
-              console.warn(`[Supabase Proxy] Database connection failed. Replaying '${actionInfo.action}' on local db.json table: ${tableName}`);
-              
-              // Build dynamic local query replaying all builder steps
+              // Always log the REAL reason now — this is what was missing before,
+              // and why the original failure was invisible in your logs.
+              console.error(
+                `[Supabase Error] '${actionInfo.action}' on table '${tableName}' failed: ${response.error.message}`
+              );
+
+              if (ALLOW_LOCAL_FALLBACK && localClient) {
+                console.warn(
+                  `[Local Fallback] ALLOW_LOCAL_FALLBACK is enabled — replaying '${actionInfo.action}' on local db.json ` +
+                  `for table '${tableName}'. This data is NOT in your real Supabase database and will be lost on redeploy.`
+                );
+
+                let localBuilder = localClient.from(tableName);
+                if (actionInfo.action === 'insert') {
+                  localBuilder = localBuilder.insert(actionInfo.data);
+                } else if (actionInfo.action === 'update') {
+                  localBuilder = localBuilder.update(actionInfo.data);
+                } else if (actionInfo.action === 'delete') {
+                  localBuilder = localBuilder.delete();
+                }
+
+                if (actionInfo.filters && actionInfo.filters.length > 0) {
+                  for (const filter of actionInfo.filters) {
+                    if (filter.method === 'eq') {
+                      localBuilder = localBuilder.eq(filter.field, filter.value);
+                    }
+                  }
+                }
+
+                return localBuilder.then(resolve);
+              }
+
+              // Production-safe default: surface the real error to the caller
+              // (leadsRoutes.js etc. already do `if (error) throw error`) instead
+              // of silently masking it as a success.
+              resolve(response);
+              return;
+            }
+            resolve(response);
+          }, (err) => {
+            console.error(
+              `[Supabase Error] '${actionInfo.action}' on table '${tableName}' promise rejected: ${err.message}`
+            );
+
+            if (ALLOW_LOCAL_FALLBACK && localClient) {
+              console.warn(`[Local Fallback] Replaying rejected '${actionInfo.action}' on local db.json table: ${tableName}`);
               let localBuilder = localClient.from(tableName);
               if (actionInfo.action === 'insert') {
                 localBuilder = localBuilder.insert(actionInfo.data);
               } else if (actionInfo.action === 'update') {
                 localBuilder = localBuilder.update(actionInfo.data);
-              } else if (actionInfo.action === 'delete') {
-                localBuilder = localBuilder.delete();
               }
-              
-              // Replay filters
-              if (actionInfo.filters && actionInfo.filters.length > 0) {
-                for (const filter of actionInfo.filters) {
-                  if (filter.method === 'eq') {
-                    localBuilder = localBuilder.eq(filter.field, filter.value);
-                  }
-                }
-              }
-              
               return localBuilder.then(resolve);
             }
-            resolve(response);
-          }, (err) => {
-            console.warn(`[Supabase Proxy] Database promise rejected. Replaying on local db.json table: ${tableName}`);
-            let localBuilder = localClient.from(tableName);
-            if (actionInfo.action === 'insert') {
-              localBuilder = localBuilder.insert(actionInfo.data);
-            } else if (actionInfo.action === 'update') {
-              localBuilder = localBuilder.update(actionInfo.data);
-            }
-            return localBuilder.then(resolve);
+
+            reject(err);
           });
         };
       }
-      
+
       if (typeof value === 'function') {
-        return function(...args) {
+        return function (...args) {
           const res = value.apply(target, args);
-          
-          // Accumulate builder chain metadata recursively
+
           const nextActionInfo = { ...actionInfo, filters: [...(actionInfo.filters || [])] };
           if (prop === 'insert' || prop === 'update' || prop === 'delete' || prop === 'select') {
             nextActionInfo.action = prop;
@@ -221,34 +263,52 @@ function wrapSupabaseBuilder(builderInstance, tableName, actionInfo = { action: 
           } else if (prop === 'eq') {
             nextActionInfo.filters.push({ method: 'eq', field: args[0], value: args[1] });
           }
-          
+
           return wrapSupabaseBuilder(res, tableName, nextActionInfo);
         };
       }
-      
+
       return value;
     }
   });
 }
 
-// Dynamic proxy handler that seamlessly routes queries
-export const supabase = new Proxy(realClient, {
+// Dynamic proxy handler that routes queries to the real client.
+// `auth` is no longer mocked here — it now delegates to the real Supabase
+// client, so authMiddleware.js actually verifies tokens instead of every
+// request silently becoming 'mock-user-id'. See the companion fix to
+// authMiddleware.js for the other half of this.
+export const supabase = new Proxy(realClient || {}, {
   get(target, prop) {
-    if (prop === 'auth') {
-      return {
-        getUser: async (token) => {
-          return { data: { user: { id: 'mock-user-id', email: 'admin@example.com' } }, error: null };
-        },
-        getSession: async () => {
-          return { data: { session: null }, error: null };
-        }
-      };
+    if (!realClient) {
+      // No credentials configured at all: fail clearly instead of pretending to work.
+      if (prop === 'from') {
+        const notConfiguredError = { message: 'Supabase is not configured: missing SUPABASE_URL/SUPABASE_KEY environment variables.' };
+        const failingBuilder = {
+          select: () => failingBuilder,
+          eq: () => failingBuilder,
+          single: () => failingBuilder,
+          order: () => failingBuilder,
+          insert: () => failingBuilder,
+          update: () => failingBuilder,
+          delete: () => failingBuilder,
+          then: (resolve) => resolve({ data: null, error: notConfiguredError }),
+        };
+        return () => failingBuilder;
+      }
+      if (prop === 'auth') {
+        return {
+          getUser: async () => ({ data: { user: null }, error: { message: 'Supabase is not configured.' } }),
+          getSession: async () => ({ data: { session: null }, error: { message: 'Supabase is not configured.' } }),
+        };
+      }
+      return undefined;
     }
-    
+
     if (prop === 'from') {
       return (table) => {
-        if (process.env.USE_LOCAL_DB === 'true') {
-          console.log(`[Supabase Proxy] Explicitly routing '${table}' query to local db.json`);
+        if (ALLOW_LOCAL_FALLBACK && process.env.USE_LOCAL_DB === 'true') {
+          console.log(`[Local DB] Explicitly routing '${table}' query to local db.json (USE_LOCAL_DB=true)`);
           return localClient.from(table);
         }
 
@@ -256,7 +316,7 @@ export const supabase = new Proxy(realClient, {
         return wrapSupabaseBuilder(originalBuilder, table);
       };
     }
-    
+
     return target[prop];
   }
 });

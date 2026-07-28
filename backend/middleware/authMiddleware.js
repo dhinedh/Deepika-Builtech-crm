@@ -1,37 +1,31 @@
 import { supabase } from '../config/supabase.js';
 
+// Only used for local development, e.g. `ALLOW_DEV_AUTH_BYPASS=true npm run dev`.
+// Never set this in Render's production environment variables.
+const ALLOW_DEV_AUTH_BYPASS = process.env.ALLOW_DEV_AUTH_BYPASS === 'true';
+
 export const requireAuth = async (req, res, next) => {
   try {
+    if (ALLOW_DEV_AUTH_BYPASS) {
+      req.user = { id: 'mock-user-id', email: 'admin@deepikabuiltech.com' };
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
-    
-    // Check if token exists
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      if (process.env.NODE_ENV === 'development' || !process.env.SUPABASE_URL || process.env.SUPABASE_URL.includes('lwacdwackjnifrjgkrom')) {
-        req.user = { id: 'mock-user-id', email: 'admin@deepikabuiltech.com' };
-        return next();
-      }
       return res.status(401).json({ error: 'Unauthorized: No token provided' });
     }
 
     const token = authHeader.split(' ')[1];
-    if (token === 'mock-token' || token === 'local-token' || process.env.NODE_ENV === 'development' || !process.env.SUPABASE_URL || process.env.SUPABASE_URL.includes('lwacdwackjnifrjgkrom')) {
-      req.user = { id: 'mock-user-id', email: 'admin@deepikabuiltech.com' };
-      return next();
-    }
-    
-    // Verify the JWT token securely with Supabase
+
+    // Verify the JWT token for real with Supabase — no more hardcoded bypass.
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
-      if (process.env.NODE_ENV === 'development' || !process.env.SUPABASE_URL || process.env.SUPABASE_URL.includes('lwacdwackjnifrjgkrom')) {
-        req.user = { id: 'mock-user-id', email: 'admin@deepikabuiltech.com' };
-        return next();
-      }
       return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
     }
 
-
-    // Attach user payload to the request for downstream use
     req.user = user;
     next();
   } catch (err) {
