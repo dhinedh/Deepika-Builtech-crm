@@ -15,16 +15,17 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const existing = await User.findOne({ email });
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = await User.findOne({ email: cleanEmail });
     if (existing) {
       return res.status(400).json({ error: 'User already exists with this email' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
-      email,
+      email: cleanEmail,
       password: hashedPassword,
-      name: fullName || email.split('@')[0],
+      name: fullName || cleanEmail.split('@')[0],
       role: role || 'Sales'
     });
 
@@ -47,7 +48,8 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email });
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: cleanEmail });
     if (!user) {
       return res.status(400).json({ error: 'Invalid email or password' });
     }

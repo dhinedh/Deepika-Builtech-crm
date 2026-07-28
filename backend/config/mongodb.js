@@ -12,26 +12,25 @@ export const connectDB = async () => {
     await mongoose.connect(MONGO_URI);
     console.log('✅ Connected to MongoDB Atlas (whatsapp-crm)');
 
-    // Auto-seed default admin user if none exists
-    const userCount = await User.countDocuments();
-    if (userCount === 0) {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      await User.create({
-        email: 'admin@deepikabuiltech.com',
-        password: hashedPassword,
-        name: 'Admin User',
-        role: 'Admin'
-      });
-      console.log('✅ Default Admin user created: admin@deepikabuiltech.com / admin123');
+    // Auto-seed default admin users if they don't exist
+    const defaultEmails = ['admin@deepikabuiltech.com', 'admin@deepika.com'];
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    
+    for (const email of defaultEmails) {
+      const existing = await User.findOne({ email: email.toLowerCase() });
+      if (!existing) {
+        await User.create({
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          name: 'Admin User',
+          role: 'Admin'
+        });
+        console.log(`✅ Default Admin user created: ${email} / admin123`);
+      }
     }
   } catch (error) {
     console.error('❌ MongoDB Connection Error:', error.message);
   }
-};
-
-// Immediate connection attempt
-connectDB();
-
 // Define Mongoose Schemas & Models
 const LeadSchema = new mongoose.Schema({
   id: { type: String },
@@ -188,3 +187,6 @@ export const modelsMap = {
   sitevisits: SiteVisit,
   users: User
 };
+
+// Immediate connection attempt & admin user seeding after models initialization
+connectDB();
