@@ -67,12 +67,14 @@ interface CRMState {
   setCurrentUser: (user: User | null) => void;
 }
 
+import { supabase } from '../services/supabase';
+
 export const useCRMStore = create<CRMState>()(
   persist(
     (set) => ({
-      leads: sampleLeads,
-      enquiries: sampleEnquiries,
-      contacts: sampleContacts,
+      leads: [],
+      enquiries: [],
+      contacts: [],
       companies: [],
       projects: [],
       deals: [],
@@ -89,55 +91,96 @@ export const useCRMStore = create<CRMState>()(
       fetchEnquiries: async () => {
         try {
           const res = await secureFetch('/enquiries');
-          if (res.success && Array.isArray(res.data)) {
+          if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
             const mappedEnquiries: Enquiry[] = res.data.map((e: any) => ({
               id: e.id,
-              contactName: e.contactName || 'WhatsApp Customer',
+              contactName: e.contactName || e.contact_name || 'WhatsApp Customer',
               phone: e.phone || '',
-              lastMessage: e.lastMessage || '',
+              lastMessage: e.lastMessage || e.last_message || '',
+              status: e.status || 'New',
+              createdAt: e.created_at || e.createdAt || new Date().toISOString(),
+              updatedAt: e.updated_at || e.updatedAt || new Date().toISOString()
+            }));
+            set({ enquiries: mappedEnquiries });
+            return;
+          }
+        } catch (err) {}
+
+        try {
+          const { data } = await supabase.from('enquiries').select('*').order('created_at', { ascending: false });
+          if (Array.isArray(data) && data.length > 0) {
+            const mappedEnquiries: Enquiry[] = data.map((e: any) => ({
+              id: e.id,
+              contactName: e.contactName || e.contact_name || 'WhatsApp Customer',
+              phone: e.phone || '',
+              lastMessage: e.lastMessage || e.last_message || '',
               status: e.status || 'New',
               createdAt: e.created_at || e.createdAt || new Date().toISOString(),
               updatedAt: e.updated_at || e.updatedAt || new Date().toISOString()
             }));
             set({ enquiries: mappedEnquiries });
           }
-        } catch (err) {
-          console.error('Failed to fetch enquiries from backend:', err);
-        }
+        } catch (e) {}
       },
 
       fetchLeads: async () => {
         try {
           const res = await secureFetch('/leads');
-          if (res.success && Array.isArray(res.data)) {
+          if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
             const mappedLeads: Lead[] = res.data.map((lead: any) => ({
               id: lead.id,
-              contactName: lead.contactName || 'Unspecified',
-              companyName: lead.companyName || '',
+              contactName: lead.contactName || lead.contact_name || lead.name || 'Unspecified Lead',
+              companyName: lead.companyName || lead.company_name || '',
               phone: lead.phone || '',
-              projectType: lead.projectType || 'Not Mentioned',
-              location: lead.location || '',
-              landArea: lead.landArea || '',
-              estimatedBudget: lead.estimatedBudget || 0,
-              timeline: lead.timeline || 'To be confirmed',
-              source: lead.source || 'Website Form',
-              status: lead.status || 'New',
-              leadScore: lead.leadScore || 0,
+              projectType: lead.projectType || lead.project_type || 'PEB Warehouse',
+              location: lead.location || lead.site_location || '',
+              landArea: lead.landArea || lead.land_area || '',
+              estimatedBudget: lead.estimatedBudget || lead.estimated_budget || 0,
+              timeline: lead.timeline || lead.project_timeline || 'Immediate',
+              source: lead.source || lead.source_channel || 'WhatsApp Bot',
+              assignedTo: lead.assignedTo || 'u1',
+              status: lead.status || lead.lead_status || 'New',
+              leadScore: lead.leadScore || lead.lead_score || 80,
+              notes: lead.notes || '',
+              createdAt: lead.created_at || lead.createdAt || new Date().toISOString(),
+              updatedAt: lead.updated_at || lead.updatedAt || new Date().toISOString()
+            }));
+            set({ leads: mappedLeads });
+            return;
+          }
+        } catch (err) {}
+
+        try {
+          const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+          if (Array.isArray(data) && data.length > 0) {
+            const mappedLeads: Lead[] = data.map((lead: any) => ({
+              id: lead.id,
+              contactName: lead.contactName || lead.contact_name || lead.name || 'Unspecified Lead',
+              companyName: lead.companyName || lead.company_name || '',
+              phone: lead.phone || '',
+              projectType: lead.projectType || lead.project_type || 'PEB Warehouse',
+              location: lead.location || lead.site_location || '',
+              landArea: lead.landArea || lead.land_area || '',
+              estimatedBudget: lead.estimatedBudget || lead.estimated_budget || 0,
+              timeline: lead.timeline || lead.project_timeline || 'Immediate',
+              source: lead.source || lead.source_channel || 'WhatsApp Bot',
+              assignedTo: lead.assignedTo || 'u1',
+              status: lead.status || lead.lead_status || 'New',
+              leadScore: lead.leadScore || lead.lead_score || 80,
               notes: lead.notes || '',
               createdAt: lead.created_at || lead.createdAt || new Date().toISOString(),
               updatedAt: lead.updated_at || lead.updatedAt || new Date().toISOString()
             }));
             set({ leads: mappedLeads });
           }
-        } catch (err) {
-          console.error('Failed to fetch leads from backend:', err);
-        }
+        } catch (e) {}
       },
+
 
       fetchFollowUps: async () => {
         try {
           const res = await secureFetch('/followups');
-          if (res.success && Array.isArray(res.data)) {
+          if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
             const mappedFollowUps: FollowUp[] = res.data.map((f: any) => ({
               id: f.id,
               contactId: f.lead_id || f.contactId || '',
@@ -154,11 +197,33 @@ export const useCRMStore = create<CRMState>()(
               updatedAt: f.updated_at || new Date().toISOString()
             }));
             set({ followUps: mappedFollowUps });
+            return;
           }
-        } catch (err) {
-          console.error('Failed to fetch followups from backend:', err);
-        }
+        } catch (err) {}
+
+        try {
+          const { data } = await supabase.from('followups').select('*').order('scheduled_date', { ascending: true });
+          if (Array.isArray(data) && data.length > 0) {
+            const mappedFollowUps: FollowUp[] = data.map((f: any) => ({
+              id: f.id,
+              contactId: f.lead_id || f.contactId || '',
+              linkedToType: 'Lead',
+              linkedToId: f.lead_id || '',
+              type: f.type || 'Phone Call',
+              scheduledDate: f.scheduled_date || f.scheduledDate || new Date().toISOString(),
+              assignedTo: f.assignedTo || 'u1',
+              reminder: '1 day before',
+              status: f.status || 'Pending',
+              notes: f.notes || '',
+              outcome: f.outcome || '',
+              createdAt: f.created_at || new Date().toISOString(),
+              updatedAt: f.updated_at || new Date().toISOString()
+            }));
+            set({ followUps: mappedFollowUps });
+          }
+        } catch (e) {}
       },
+
 
       fetchContacts: async () => {
         try {
