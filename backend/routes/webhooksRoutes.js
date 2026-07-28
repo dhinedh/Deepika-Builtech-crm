@@ -395,6 +395,44 @@ router.post('/whatsapp-bot-enquiry', async (req, res) => {
   }
 });
 
+// 5. Webhook endpoint to receive automated follow-ups from the WhatsApp Bot and record on CRM Follow-Ups page
+router.post('/whatsapp-bot-followup', async (req, res) => {
+  try {
+    const payload = req.body;
+    console.log('[WhatsApp Bot Follow-Up Webhook Received]', payload);
+
+    const { CustomerName, WhatsAppNumber, FollowUpText, Channel } = payload;
+
+    if (!WhatsAppNumber) {
+      return res.status(400).json({ error: 'Missing WhatsApp number' });
+    }
+
+    const newFollowUp = {
+      title: `7-Day Follow-Up: ${CustomerName || WhatsAppNumber}`,
+      type: Channel || (WhatsAppNumber.startsWith('ig:') ? 'Instagram DM' : WhatsAppNumber.startsWith('fb:') ? 'Facebook Messenger' : 'WhatsApp'),
+      scheduled_date: new Date().toISOString(),
+      status: 'Completed',
+      notes: FollowUpText || `Automated 7-day follow-up message delivered to ${CustomerName || WhatsAppNumber}`
+    };
+
+    const { data, error } = await supabase
+      .from('followups')
+      .insert([newFollowUp])
+      .select();
+
+    if (error) {
+      console.error('[WhatsApp Bot Follow-Up Webhook DB Error]:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+
+    console.log(`[WhatsApp Bot Follow-Up Webhook] Created new follow-up record for ${newFollowUp.title}`);
+    res.status(201).json({ success: true, data: data[0] });
+  } catch (err) {
+    console.error('[WhatsApp Bot Follow-Up Webhook Error]:', err);
+    res.status(500).json({ error: err.message || 'Internal server error while inserting follow-up' });
+  }
+});
+
 /**
  * POST endpoint to send direct messages to Instagram DM or Facebook Messenger
  */
@@ -443,3 +481,4 @@ router.post('/trigger-7day-reminders', async (req, res) => {
 });
 
 export default router;
+

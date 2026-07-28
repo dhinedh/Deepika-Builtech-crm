@@ -14,7 +14,9 @@ import Companies from './modules/Companies/Companies';
 import Pipeline from './modules/Pipeline/Pipeline';
 import Projects from './modules/Projects/Projects';
 import Quotations from './modules/Quotations/Quotations';
+import RequestedQuotations from './modules/RequestedQuotations/RequestedQuotations';
 import Tasks from './modules/Tasks/Tasks';
+
 import FollowUps from './modules/FollowUps/FollowUps';
 import Reports from './modules/Reports/Reports';
 import Settings from './modules/Settings/Settings';
@@ -136,7 +138,9 @@ const App: React.FC = () => {
           {/* Protected Application Routes */}
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+          <Route path="/requested-quotations" element={<ProtectedRoute><RequestedQuotations /></ProtectedRoute>} />
           <Route path="/enquiries" element={<ProtectedRoute><Enquiries /></ProtectedRoute>} />
+
           <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
           <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
           <Route path="/pipeline" element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />

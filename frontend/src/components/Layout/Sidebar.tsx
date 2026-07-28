@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, UserSquare2, Building2, GitBranch, 
-  FileText, Briefcase, CheckSquare, CalendarClock, MapPin, 
+  FileText, FileSpreadsheet, Briefcase, CheckSquare, CalendarClock, MapPin, 
   Truck, BarChart3, Settings, Menu, X, MessageSquare 
 } from 'lucide-react';
 import './Sidebar.css';
@@ -10,6 +10,7 @@ import './Sidebar.css';
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/leads', label: 'Leads', icon: Users },
+  { path: '/requested-quotations', label: 'Requested Quotations', icon: FileSpreadsheet },
   { path: '/enquiries', label: 'Enquiries', icon: MessageSquare },
   { path: '/contacts', label: 'Contacts', icon: UserSquare2 },
   { path: '/companies', label: 'Companies', icon: Building2 },
@@ -23,6 +24,7 @@ const navItems = [
   { path: '/reports', label: 'Reports', icon: BarChart3 },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
+
 
 interface SidebarProps {
   isOpen?: boolean;

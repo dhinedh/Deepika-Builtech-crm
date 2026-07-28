@@ -1,8 +1,9 @@
 import React from 'react';
-import { MessageSquare, AlertCircle, CalendarClock, Send, Instagram, Facebook } from 'lucide-react';
+import { MessageSquare, AlertCircle, CalendarClock, Send } from 'lucide-react';
 import { useCRMStore } from '../../store/useCRMStore';
 import { format, addDays } from 'date-fns';
 import { sendOmniChannelMessage, detectLeadPlatform } from '../../utils/whatsapp';
+
 
 export const WhatsAppAssistant: React.FC = () => {
   const { leads, followUps } = useCRMStore();
@@ -47,7 +48,7 @@ export const WhatsAppAssistant: React.FC = () => {
         bg: '#E1306C',
         badgeBg: 'rgba(225, 48, 108, 0.1)',
         textColor: '#E1306C',
-        icon: <Instagram size={14} style={{ marginRight: '6px' }} />
+        icon: <MessageSquare size={14} style={{ marginRight: '6px' }} />
       };
     }
     if (platform === 'facebook') {
@@ -56,9 +57,10 @@ export const WhatsAppAssistant: React.FC = () => {
         bg: '#0084FF',
         badgeBg: 'rgba(0, 132, 255, 0.1)',
         textColor: '#0084FF',
-        icon: <Facebook size={14} style={{ marginRight: '6px' }} />
+        icon: <MessageSquare size={14} style={{ marginRight: '6px' }} />
       };
     }
+
     return {
       label: 'WhatsApp',
       bg: '#25D366',
