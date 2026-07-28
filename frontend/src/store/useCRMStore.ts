@@ -118,11 +118,13 @@ export const useCRMStore = create<CRMState>()(
               location: lead.location || lead.site_location || '',
               landArea: lead.landArea || lead.land_area || '',
               estimatedBudget: lead.estimatedBudget || lead.estimated_budget || 0,
+              budgetRange: lead.budgetRange || lead.budget_range || '',
               timeline: lead.timeline || lead.project_timeline || 'Immediate',
               source: lead.source || lead.source_channel || 'WhatsApp Bot',
               assignedTo: lead.assignedTo || 'u1',
               status: lead.status || lead.lead_status || 'New',
               leadScore: lead.leadScore || lead.lead_score || 80,
+              isQuoteRequested: lead.isQuoteRequested || lead.is_quote_requested || lead.status === 'Quotation Requested' || false,
               notes: lead.notes || '',
               createdAt: lead.created_at || lead.createdAt || new Date().toISOString(),
               updatedAt: lead.updated_at || lead.updatedAt || new Date().toISOString()

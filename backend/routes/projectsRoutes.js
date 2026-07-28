@@ -1,58 +1,70 @@
 import express from 'express';
-import { supabase } from '../config/supabase.js';
+import mongoose from 'mongoose';
+import { Project } from '../config/mongodb.js';
 
 const router = express.Router();
 
-// GET all projects
+function getFilter(id) {
+  const filter = [{ id: id }];
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    filter.push({ _id: id });
+  }
+  return { $or: filter };
+}
+
 router.get('/', async (req, res) => {
   try {
-    // const { data, error } = await supabase.from('projects').select('*');
-    // if (error) throw error;
-    res.json({ message: 'Get all projects', data: [] });
+    const items = await Project.find({}).sort({ created_at: -1 });
+    const data = items.map(i => {
+      const obj = i.toObject();
+      obj.id = obj.id || obj._id.toString();
+      return obj;
+    });
+    res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET single projects
 router.get('/:id', async (req, res) => {
   try {
-    // const { data, error } = await supabase.from('projects').select('*').eq('id', req.params.id).single();
-    // if (error) throw error;
-    res.json({ message: `Get projects ${req.params.id}`, data: {} });
+    const item = await Project.findOne(getFilter(req.params.id));
+    if (!item) return res.status(404).json({ error: 'Project not found' });
+    const data = item.toObject();
+    data.id = data.id || data._id.toString();
+    res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// POST create new projects
 router.post('/', async (req, res) => {
   try {
-    // const { data, error } = await supabase.from('projects').insert([req.body]).select();
-    // if (error) throw error;
-    res.status(201).json({ message: 'Create a new projects', data: req.body });
+    const newItem = await Project.create(req.body);
+    const data = newItem.toObject();
+    data.id = data.id || data._id.toString();
+    res.status(201).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// PUT update projects
 router.put('/:id', async (req, res) => {
   try {
-    // const { data, error } = await supabase.from('projects').update(req.body).eq('id', req.params.id).select();
-    // if (error) throw error;
-    res.json({ message: `Update projects ${req.params.id}`, data: req.body });
+    const updated = await Project.findOneAndUpdate(getFilter(req.params.id), req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Project not found' });
+    const data = updated.toObject();
+    data.id = data.id || data._id.toString();
+    res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// DELETE projects
 router.delete('/:id', async (req, res) => {
   try {
-    // const { error } = await supabase.from('projects').delete().eq('id', req.params.id);
-    // if (error) throw error;
-    res.json({ message: `Delete projects ${req.params.id}` });
+    await Project.deleteOne(getFilter(req.params.id));
+    res.json({ success: true, message: `Deleted project ${req.params.id}` });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

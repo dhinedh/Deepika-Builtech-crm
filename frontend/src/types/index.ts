@@ -9,7 +9,7 @@ export interface User {
   avatar?: string;
 }
 
-export type LeadStatus = 'New' | 'Contacted' | 'Qualified' | 'Site Visit Done' | 'Quotation Sent' | 'Won' | 'Not Interested' | 'Lost';
+export type LeadStatus = 'New' | 'Contacted' | 'Qualified' | 'Site Visit Done' | 'Quotation Sent' | 'Quotation Requested' | 'Won' | 'Not Interested' | 'Lost';
 export type ProjectType = 'PEB Warehouse' | 'Cold Storage' | 'Mezzanine Floor' | 'EOT Crane' | 'Factory/Shed' | 'Civil Construction' | 'PEB / Pre-Engineered Building' | 'Not Mentioned' | 'Other';
 export type LeadSource = 'Website Form' | 'WhatsApp' | 'Instagram DM' | 'Facebook Messenger' | 'Phone Call' | 'Referral' | 'Google Search' | 'Site Walk-in' | 'LinkedIn' | 'Trade Fair' | 'Justdial' | 'IndiaMART' | 'TradeIndia' | 'Meta Ads' | 'Google Ads' | 'WhatsApp Bot';
 
@@ -25,11 +25,13 @@ export interface Lead {
   location: string;
   landArea?: string;
   estimatedBudget?: number; // in lakhs
+  budgetRange?: string;
   timeline: TimelineRequired;
   source: LeadSource;
   assignedTo: string; // User ID
   status: LeadStatus;
   leadScore: number;
+  isQuoteRequested?: boolean;
   nextFollowUpDate?: string;
   notes?: string;
   createdAt: string;

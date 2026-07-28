@@ -1,13 +1,26 @@
 import express from 'express';
-import { supabase } from '../config/supabase.js';
+import mongoose from 'mongoose';
+import { Lead } from '../config/mongodb.js';
 
 const router = express.Router();
+
+function getFilter(id) {
+  const filter = [{ id: id }];
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    filter.push({ _id: id });
+  }
+  return { $or: filter };
+}
 
 // GET all leads
 router.get('/', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
+    const leads = await Lead.find({}).sort({ created_at: -1, createdAt: -1 });
+    const data = leads.map(l => {
+      const obj = l.toObject();
+      obj.id = obj.id || obj._id.toString();
+      return obj;
+    });
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -17,8 +30,10 @@ router.get('/', async (req, res) => {
 // GET single lead
 router.get('/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('leads').select('*').eq('id', req.params.id).single();
-    if (error) throw error;
+    const lead = await Lead.findOne(getFilter(req.params.id));
+    if (!lead) return res.status(404).json({ error: 'Lead not found' });
+    const data = lead.toObject();
+    data.id = data.id || data._id.toString();
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -28,9 +43,10 @@ router.get('/:id', async (req, res) => {
 // POST create new lead
 router.post('/', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('leads').insert([req.body]).select();
-    if (error) throw error;
-    res.status(201).json({ success: true, data: data[0] });
+    const newLead = await Lead.create(req.body);
+    const data = newLead.toObject();
+    data.id = data.id || data._id.toString();
+    res.status(201).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -39,9 +55,11 @@ router.post('/', async (req, res) => {
 // PUT update lead
 router.put('/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('leads').update(req.body).eq('id', req.params.id).select();
-    if (error) throw error;
-    res.json({ success: true, data: data[0] });
+    const updated = await Lead.findOneAndUpdate(getFilter(req.params.id), req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Lead not found' });
+    const data = updated.toObject();
+    data.id = data.id || data._id.toString();
+    res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -50,8 +68,7 @@ router.put('/:id', async (req, res) => {
 // DELETE lead
 router.delete('/:id', async (req, res) => {
   try {
-    const { error } = await supabase.from('leads').delete().eq('id', req.params.id);
-    if (error) throw error;
+    await Lead.deleteOne(getFilter(req.params.id));
     res.json({ success: true, message: `Deleted lead ${req.params.id}` });
   } catch (error) {
     res.status(500).json({ error: error.message });

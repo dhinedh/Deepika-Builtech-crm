@@ -1,57 +1,69 @@
 import express from 'express';
-import { supabase } from '../config/supabase.js';
+import mongoose from 'mongoose';
+import { Task } from '../config/mongodb.js';
 
 const router = express.Router();
 
-// GET all tasks
+function getFilter(id) {
+  const filter = [{ id: id }];
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    filter.push({ _id: id });
+  }
+  return { $or: filter };
+}
+
 router.get('/', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('tasks').select('*');
-    if (error) throw error;
+    const items = await Task.find({}).sort({ created_at: -1 });
+    const data = items.map(i => {
+      const obj = i.toObject();
+      obj.id = obj.id || obj._id.toString();
+      return obj;
+    });
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET single task
 router.get('/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('tasks').select('*').eq('id', req.params.id).single();
-    if (error) throw error;
+    const item = await Task.findOne(getFilter(req.params.id));
+    if (!item) return res.status(404).json({ error: 'Task not found' });
+    const data = item.toObject();
+    data.id = data.id || data._id.toString();
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// POST create new task
 router.post('/', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('tasks').insert([req.body]).select();
-    if (error) throw error;
-    res.status(201).json({ success: true, data: data[0] });
+    const newItem = await Task.create(req.body);
+    const data = newItem.toObject();
+    data.id = data.id || data._id.toString();
+    res.status(201).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// PUT update task
 router.put('/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('tasks').update(req.body).eq('id', req.params.id).select();
-    if (error) throw error;
-    res.json({ success: true, data: data[0] });
+    const updated = await Task.findOneAndUpdate(getFilter(req.params.id), req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Task not found' });
+    const data = updated.toObject();
+    data.id = data.id || data._id.toString();
+    res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// DELETE task
 router.delete('/:id', async (req, res) => {
   try {
-    const { error } = await supabase.from('tasks').delete().eq('id', req.params.id);
-    if (error) throw error;
+    await Task.deleteOne(getFilter(req.params.id));
     res.json({ success: true, message: `Deleted task ${req.params.id}` });
   } catch (error) {
     res.status(500).json({ error: error.message });

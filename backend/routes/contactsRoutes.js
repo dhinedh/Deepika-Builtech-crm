@@ -1,13 +1,26 @@
 import express from 'express';
-import { supabase } from '../config/supabase.js';
+import mongoose from 'mongoose';
+import { Contact } from '../config/mongodb.js';
 
 const router = express.Router();
+
+function getFilter(id) {
+  const filter = [{ id: id }];
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    filter.push({ _id: id });
+  }
+  return { $or: filter };
+}
 
 // GET all contacts
 router.get('/', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('contacts').select('*');
-    if (error) throw error;
+    const contacts = await Contact.find({}).sort({ created_at: -1, createdAt: -1 });
+    const data = contacts.map(c => {
+      const obj = c.toObject();
+      obj.id = obj.id || obj._id.toString();
+      return obj;
+    });
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -17,8 +30,10 @@ router.get('/', async (req, res) => {
 // GET single contact
 router.get('/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('contacts').select('*').eq('id', req.params.id).single();
-    if (error) throw error;
+    const contact = await Contact.findOne(getFilter(req.params.id));
+    if (!contact) return res.status(404).json({ error: 'Contact not found' });
+    const data = contact.toObject();
+    data.id = data.id || data._id.toString();
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -28,9 +43,10 @@ router.get('/:id', async (req, res) => {
 // POST create new contact
 router.post('/', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('contacts').insert([req.body]).select();
-    if (error) throw error;
-    res.status(201).json({ success: true, data: data[0] });
+    const newContact = await Contact.create(req.body);
+    const data = newContact.toObject();
+    data.id = data.id || data._id.toString();
+    res.status(201).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -39,9 +55,11 @@ router.post('/', async (req, res) => {
 // PUT update contact
 router.put('/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('contacts').update(req.body).eq('id', req.params.id).select();
-    if (error) throw error;
-    res.json({ success: true, data: data[0] });
+    const updated = await Contact.findOneAndUpdate(getFilter(req.params.id), req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Contact not found' });
+    const data = updated.toObject();
+    data.id = data.id || data._id.toString();
+    res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -50,8 +68,7 @@ router.put('/:id', async (req, res) => {
 // DELETE contact
 router.delete('/:id', async (req, res) => {
   try {
-    const { error } = await supabase.from('contacts').delete().eq('id', req.params.id);
-    if (error) throw error;
+    await Contact.deleteOne(getFilter(req.params.id));
     res.json({ success: true, message: `Deleted contact ${req.params.id}` });
   } catch (error) {
     res.status(500).json({ error: error.message });

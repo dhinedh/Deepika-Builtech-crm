@@ -222,7 +222,7 @@ router.all('/whatsapp-bot-lead', async (req, res) => {
   }
   try {
     const payload = req.body;
-    const { CustomerName, WhatsAppNumber, ServiceSelected, AreaRequired, SiteLocation, Timeline, BudgetRange, SourceChannel, LeadStatus } = payload;
+    const { CustomerName, WhatsAppNumber, ServiceSelected, AreaRequired, SiteLocation, Timeline, BudgetRange, SourceChannel, LeadStatus, isQuoteRequested } = payload;
 
     if (!WhatsAppNumber) {
       return res.status(400).json({ error: 'Missing WhatsApp number' });
@@ -244,16 +244,20 @@ router.all('/whatsapp-bot-lead', async (req, res) => {
       leadSource = 'Instagram DM';
     }
 
+    const hasQuoteDetails = Boolean(isQuoteRequested || LeadStatus === 'Quotation Requested' || (AreaRequired && AreaRequired.trim() !== ''));
+
     const leadPayload = {
       contactName: CustomerName || defaultName,
       phone: finalPhone,
-      projectType: ServiceSelected || 'PEB / General Enquiry',
+      projectType: ServiceSelected || 'PEB Warehouse',
       location: SiteLocation || '',
       landArea: AreaRequired || '',
       timeline: Timeline || '',
+      budgetRange: BudgetRange || '',
       source: SourceChannel || leadSource || 'WhatsApp Bot',
-      status: LeadStatus || 'New',
-      notes: `Captured from ${SourceChannel || leadSource}.\nBudget: ${BudgetRange || 'Not confirmed'}`
+      status: LeadStatus || (hasQuoteDetails ? 'Quotation Requested' : 'New'),
+      isQuoteRequested: hasQuoteDetails,
+      notes: `Captured from ${SourceChannel || leadSource}.\n${BudgetRange ? `Budget: ${BudgetRange}` : ''}`
     };
 
     const existing = await Lead.findOne({ phone: finalPhone });

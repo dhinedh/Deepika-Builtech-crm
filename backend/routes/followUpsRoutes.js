@@ -1,13 +1,26 @@
 import express from 'express';
-import { supabase } from '../config/supabase.js';
+import mongoose from 'mongoose';
+import { FollowUp } from '../config/mongodb.js';
 
 const router = express.Router();
+
+function getFilter(id) {
+  const filter = [{ id: id }];
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    filter.push({ _id: id });
+  }
+  return { $or: filter };
+}
 
 // GET all followups
 router.get('/', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('followups').select('*, leads(*)').order('scheduled_date', { ascending: true });
-    if (error) throw error;
+    const followUps = await FollowUp.find({}).sort({ scheduled_date: 1, created_at: -1 });
+    const data = followUps.map(f => {
+      const obj = f.toObject();
+      obj.id = obj.id || obj._id.toString();
+      return obj;
+    });
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -17,8 +30,10 @@ router.get('/', async (req, res) => {
 // GET single followup
 router.get('/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('followups').select('*, leads(*)').eq('id', req.params.id).single();
-    if (error) throw error;
+    const followup = await FollowUp.findOne(getFilter(req.params.id));
+    if (!followup) return res.status(404).json({ error: 'FollowUp not found' });
+    const data = followup.toObject();
+    data.id = data.id || data._id.toString();
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -28,9 +43,10 @@ router.get('/:id', async (req, res) => {
 // POST create new followup
 router.post('/', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('followups').insert([req.body]).select();
-    if (error) throw error;
-    res.status(201).json({ success: true, data: data[0] });
+    const newFollowUp = await FollowUp.create(req.body);
+    const data = newFollowUp.toObject();
+    data.id = data.id || data._id.toString();
+    res.status(201).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -39,9 +55,11 @@ router.post('/', async (req, res) => {
 // PUT update followup
 router.put('/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('followups').update(req.body).eq('id', req.params.id).select();
-    if (error) throw error;
-    res.json({ success: true, data: data[0] });
+    const updated = await FollowUp.findOneAndUpdate(getFilter(req.params.id), req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'FollowUp not found' });
+    const data = updated.toObject();
+    data.id = data.id || data._id.toString();
+    res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -50,8 +68,7 @@ router.put('/:id', async (req, res) => {
 // DELETE followup
 router.delete('/:id', async (req, res) => {
   try {
-    const { error } = await supabase.from('followups').delete().eq('id', req.params.id);
-    if (error) throw error;
+    await FollowUp.deleteOne(getFilter(req.params.id));
     res.json({ success: true, message: `Deleted followup ${req.params.id}` });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -74,11 +74,13 @@ const LeadSchema = new mongoose.Schema({
   location: String,
   landArea: String,
   estimatedBudget: mongoose.Schema.Types.Mixed,
+  budgetRange: String,
   timeline: String,
   source: String,
   assignedTo: String,
   status: { type: String, default: 'New' },
   leadScore: { type: Number, default: 80 },
+  isQuoteRequested: { type: Boolean, default: false },
   notes: String,
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
