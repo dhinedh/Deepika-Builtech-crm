@@ -109,6 +109,7 @@
 .user-details {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .user-name {
@@ -122,7 +123,26 @@
   color: var(--sidebar-text-inactive);
 }
 
+.sidebar-logout-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
 @media (max-width: 768px) {
+
   .sidebar {
     transform: translateX(-100%);
     width: 260px;
