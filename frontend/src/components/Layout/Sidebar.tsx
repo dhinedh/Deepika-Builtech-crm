@@ -3,8 +3,9 @@ import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, UserSquare2, Building2, GitBranch, 
   FileText, FileSpreadsheet, Briefcase, CheckSquare, CalendarClock, MapPin, 
-  Truck, BarChart3, Settings, Menu, X, MessageSquare 
+  Truck, BarChart3, Settings, X, MessageSquare, LogOut 
 } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
 import './Sidebar.css';
 
 const navItems = [
@@ -25,13 +26,18 @@ const navItems = [
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
-
 interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const user = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
+
+  const userName = user?.name || user?.email?.split('@')[0] || 'Admin';
+  const initial = userName.charAt(0).toUpperCase();
+
   return (
     <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-logo">
@@ -62,11 +68,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       
       <div className="sidebar-footer">
         <div className="user-info">
-          <div className="user-avatar">A</div>
+          <div className="user-avatar">{initial}</div>
           <div className="user-details">
-            <p className="user-name">Admin</p>
+            <p className="user-name">{userName}</p>
             <p className="user-role">Super Admin</p>
           </div>
+          <button 
+            className="sidebar-logout-btn" 
+            onClick={() => logout()} 
+            title="Log Out"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       </div>
     </aside>
@@ -74,3 +87,4 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 };
 
 export default Sidebar;
+

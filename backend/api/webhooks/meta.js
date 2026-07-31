@@ -600,7 +600,7 @@ async function handleMetaChatbot(senderId, recipientId, platform, messageText, c
   const isWelcome = msgLower.includes("hi") || msgLower.includes("hello") || msgLower.includes("hey") || msgLower.includes("start") || msgLower.includes("vanakkam") || msgLower === "btn_menu";
 
   if (isWelcome) {
-    await sendMetaChatMessage(senderId, recipientId, platform, `🏗️ *Welcome to Deepika Builtech Engineering!*\n\nTamil Nadu's most trusted Pre-Engineered Building specialists — based in Chennai.\n\n🏆 Excellence Award 2025\n✅ 10+ Years of Experience\n✅ 150+ Projects Delivered\n✅ 3 Manufacturing Units in Tamil Nadu\n\nPlease select an option:\n\n1️⃣ About Us\n2️⃣ Our Services\n3️⃣ Get a Free Quote\n4️⃣ Contact & Locations\n5️⃣ 💬 Talk to Human`, [
+    await sendMetaChatMessage(senderId, recipientId, platform, `🏗️ *Welcome to Deepika Builtech Engineering!*\n\nTamil Nadu's most trusted Pre-Engineered Building specialists — based in Chennai.\n\n🏆 Excellence Award 2026 | Achievers Award 2025\n✅ 25+ Years of Experience\n✅ 500+ Projects Delivered\n✅ 300+ Happy Clients\n✅ 3 Manufacturing Units in Tamil Nadu\n\nPlease select an option:\n\n1️⃣ About Us\n2️⃣ Our Services\n3️⃣ Get a Free Quote\n4️⃣ Contact & Locations\n5️⃣ 💬 Talk to Human`, [
       { id: "btn_about", title: "1 - About Us" },
       { id: "btn_services", title: "2 - Services" },
       { id: "btn_quote", title: "3 - Free Quote" }
@@ -609,7 +609,7 @@ async function handleMetaChatbot(senderId, recipientId, platform, messageText, c
   }
 
   if (msgLower === "btn_about" || msgLower === "1" || msgLower.includes("about")) {
-    await sendMetaChatMessage(senderId, recipientId, platform, `🏢 *About Deepika Builtech Engineering*\n\nWe are a leading Pre-Engineered Building (PEB) construction company headquartered in Ambattur, Chennai — with 10+ years of trusted service across Tamil Nadu.\n\n🏭 *What We Build:*\nWe design, fabricate and erect high-quality PEB structures, warehouses, cold storages, mezzanine floors, industrial sheds and godowns.\n\n📍 *Our 3 Locations:*\n- Head Office — Ambattur, Chennai\n- Unit I — Kanchipuram District\n- Unit II — Thirumullaivoyal, Thiruvallur\n\n🏆 *Why Clients Choose Us:*\n✅ In-house manufacturing\n✅ On-time delivery\n✅ Transparent pricing\n\nWhat would you like to do next?`, [
+    await sendMetaChatMessage(senderId, recipientId, platform, `🏢 *About Deepika Builtech Engineering*\n\nWe are a leading Pre-Engineered Building (PEB) construction company headquartered in Ambattur, Chennai — with 25+ years of trusted service across Tamil Nadu.\n\n🏭 *What We Build:*\nWe design, fabricate and erect high-quality PEB structures, warehouses, cold storages, mezzanine floors, industrial sheds and godowns.\n\n📍 *Our 3 Locations:*\n- Head Office — Ambattur, Chennai\n- Unit I — Kanchipuram District\n- Unit II — Thirumullaivoyal, Thiruvallur\n\n🏆 *Why 300+ Clients Choose Us:*\n✅ In-house manufacturing (3 Units)\n✅ On-time delivery (500+ Projects)\n✅ Transparent pricing\n✅ Excellence Award 2026 & Achievers Award 2025\n\nWhat would you like to do next?`, [
       { id: "btn_services", title: "2 - View Services" },
       { id: "btn_quote", title: "3 - Free Quote" },
       { id: "btn_menu", title: "Main Menu" }

@@ -267,7 +267,7 @@ router.all('/whatsapp-bot-lead', async (req, res) => {
 
     // Send WhatsApp notification alert to sales team
     if (hasQuoteDetails) {
-      const salesNumbers = (process.env.NOTIFICATION_WHATSAPP_NUMBERS || '919342400879,919600067611,919884487938')
+      const salesNumbers = (process.env.NOTIFICATION_WHATSAPP_NUMBERS || '919884487938,919791644688,918508599029,919600067611,916380855892')
         .split(',')
         .map(n => n.trim().replace(/\D/g, ''))
         .filter(Boolean);
