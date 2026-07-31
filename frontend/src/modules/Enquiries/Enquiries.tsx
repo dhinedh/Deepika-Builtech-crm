@@ -66,22 +66,23 @@ const Enquiries: React.FC = () => {
 
   const getSourceBadgeClass = (source?: string) => {
     const s = (source || '').toLowerCase();
-    if (s.includes('facebook') || s.includes('messenger')) return 'badge-facebook';
     if (s.includes('instagram') || s.includes('ig')) return 'badge-instagram';
     if (s.includes('whatsapp')) return 'badge-whatsapp';
+    if (s.includes('facebook') || s.includes('messenger')) return 'badge-facebook';
     return 'badge-info';
   };
 
   const filteredEnquiries = enquiries.filter(item => {
+    const itemSource = item.source || '';
     const matchesSearch = 
       item.contactName.toLowerCase().includes(searchTerm.toLowerCase()) || 
       item.phone.includes(searchTerm) || 
       item.lastMessage.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ((item as any).source && (item as any).source.toLowerCase().includes(searchTerm.toLowerCase()));
+      itemSource.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
     const matchesSource = sourceFilter === 'All' || 
-                         ((item as any).source && (item as any).source.toLowerCase().includes(sourceFilter.toLowerCase()));
+                         itemSource.toLowerCase().includes(sourceFilter.toLowerCase());
     
     return matchesSearch && matchesStatus && matchesSource;
   });
@@ -168,10 +169,11 @@ const Enquiries: React.FC = () => {
                     </div>
                   </td>
                   <td>
-                    <span className={`badge ${getSourceBadgeClass((item as any).source)}`}>
-                      {(item as any).source || 'Facebook Messenger'}
+                    <span className={`badge ${getSourceBadgeClass(item.source)}`}>
+                      {item.source || 'WhatsApp'}
                     </span>
                   </td>
+
                   <td><span className="phone-badge">{formatContactSubtitle(item.phone)}</span></td>
                   <td className="message-cell">
                     <p className="message-text" title={item.lastMessage}>

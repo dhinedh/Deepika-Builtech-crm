@@ -279,7 +279,9 @@ export interface Enquiry {
   contactName: string;
   phone: string;
   lastMessage: string;
+  source?: string;
   status: 'New' | 'Converted' | 'Ignored';
   createdAt: string;
   updatedAt: string;
 }
+

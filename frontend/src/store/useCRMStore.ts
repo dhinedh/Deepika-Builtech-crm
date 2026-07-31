@@ -89,21 +89,39 @@ export const useCRMStore = create<CRMState>()(
         try {
           const res = await secureFetch('/enquiries');
           if (res?.success && Array.isArray(res.data)) {
-            const mappedEnquiries: Enquiry[] = res.data.map((e: any) => ({
-              id: e.id,
-              contactName: e.contactName || e.contact_name || 'WhatsApp Customer',
-              phone: e.phone || '',
-              lastMessage: e.lastMessage || e.last_message || '',
-              status: e.status || 'New',
-              createdAt: e.created_at || e.createdAt || new Date().toISOString(),
-              updatedAt: e.updated_at || e.updatedAt || new Date().toISOString()
-            }));
+            const mappedEnquiries: Enquiry[] = res.data.map((e: any) => {
+              const phone = e.phone || '';
+              const lastMessage = e.lastMessage || e.last_message || '';
+              let source = e.source;
+
+              if (!source) {
+                if (phone.startsWith('@') || lastMessage.toLowerCase().includes('reel comment') || lastMessage.toLowerCase().includes('instagram')) {
+                  source = 'Instagram DM';
+                } else if (phone.startsWith('+') || /^\+?\d[\d\s-]{8,}$/.test(phone)) {
+                  source = 'WhatsApp';
+                } else {
+                  source = 'Facebook Messenger';
+                }
+              }
+
+              return {
+                id: e.id,
+                contactName: e.contactName || e.contact_name || 'Customer',
+                phone: phone,
+                lastMessage: lastMessage,
+                source: source,
+                status: e.status || 'New',
+                createdAt: e.created_at || e.createdAt || new Date().toISOString(),
+                updatedAt: e.updated_at || e.updatedAt || new Date().toISOString()
+              };
+            });
             set({ enquiries: mappedEnquiries });
           }
         } catch (err: any) {
           console.warn('[CRM Store] fetchEnquiries error:', err.message);
         }
       },
+
 
       fetchLeads: async () => {
         try {
