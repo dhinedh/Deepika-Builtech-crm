@@ -76,3 +76,40 @@
   font-size: 20px;
   margin-bottom: 4px;
 }
+
+@media (max-width: 768px) {
+  .settings-container {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 8px;
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .settings-nav-item {
+    padding: 10px 16px;
+    white-space: nowrap;
+    border-radius: 8px;
+  }
+
+  .settings-nav-item.active::after {
+    display: none;
+  }
+
+  .settings-content {
+    padding: 16px;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+

@@ -79,3 +79,21 @@
   font-size: 10px;
   font-weight: 700;
 }
+
+@media (max-width: 768px) {
+  .projects-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .project-details-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .project-team {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+

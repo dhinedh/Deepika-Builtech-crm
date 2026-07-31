@@ -152,3 +152,33 @@
   background-color: rgba(226, 75, 74, 0.1);
   color: var(--danger);
 }
+
+@media (max-width: 768px) {
+  .pipeline-module {
+    height: auto;
+    min-height: calc(100vh - 100px);
+  }
+
+  .pipeline-header {
+    padding: 14px 16px;
+  }
+
+  .pipeline-stats {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .stat-divider {
+    display: none;
+  }
+
+  .kanban-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .kanban-column {
+    width: 260px;
+  }
+}
+
