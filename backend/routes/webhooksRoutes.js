@@ -141,6 +141,20 @@ router.post('/meta', async (req, res) => {
               await Lead.create(newLead);
               console.log(`[WhatsApp Lead Captured] Added ${customerName} to CRM.`);
               await sendFollowUpLead(phone, customerName);
+
+              // Send WhatsApp alert to sales team
+              const salesNumbers = (process.env.NOTIFICATION_WHATSAPP_NUMBERS || '919884487938,919791644688,918508599029,919600067611,916380855892')
+                .split(',')
+                .map(n => n.trim().replace(/\D/g, ''))
+                .filter(Boolean);
+
+              const now = new Date();
+              const timeReceived = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+              const alertMsg = `🔔 *NEW WHATSAPP LEAD CAPTURED — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${customerName}\n📱 *Phone:* ${phone}\n💬 *Message:* ${msg.text?.body || 'Initial Message'}\n⏰ *Received:* ${timeReceived}\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Respond to lead*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
+
+              for (const num of salesNumbers) {
+                sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Lead Alert Error] Failed sending to ${num}:`, e.message));
+              }
             } else {
               console.log(`[WhatsApp Filter] Ignored casual/spam message from ${phone}: "${messageText}"`);
             }
@@ -188,6 +202,20 @@ router.post('/meta', async (req, res) => {
                 
                 await Lead.create(newLead);
                 console.log(`[${platform.toUpperCase()} Lead Captured] Added ${customerName} to CRM.`);
+
+                // Send WhatsApp alert to sales team
+                const salesNumbers = (process.env.NOTIFICATION_WHATSAPP_NUMBERS || '919884487938,919791644688,918508599029,919600067611,916380855892')
+                  .split(',')
+                  .map(n => n.trim().replace(/\D/g, ''))
+                  .filter(Boolean);
+
+                const now = new Date();
+                const timeReceived = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+                const alertMsg = `🔔 *NEW ${platform.toUpperCase()} LEAD CAPTURED — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${customerName}\n📱 *Handle/ID:* ${phoneIdentifier}\n💬 *Message:* ${messageText || 'Initial DM'}\n⏰ *Received:* ${timeReceived}\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Respond to lead*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
+
+                for (const num of salesNumbers) {
+                  sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Lead Alert Error] Failed sending to ${num}:`, e.message));
+                }
               }
             }
           }
@@ -266,21 +294,21 @@ router.all('/whatsapp-bot-lead', async (req, res) => {
     writeLeadToLocalDb(leadPayload);
 
     // Send WhatsApp notification alert to sales team
-    if (hasQuoteDetails) {
-      const salesNumbers = (process.env.NOTIFICATION_WHATSAPP_NUMBERS || '919884487938,919791644688,918508599029,919600067611,916380855892')
-        .split(',')
-        .map(n => n.trim().replace(/\D/g, ''))
-        .filter(Boolean);
+    const salesNumbers = (process.env.NOTIFICATION_WHATSAPP_NUMBERS || '919884487938,919791644688,918508599029,919600067611,916380855892')
+      .split(',')
+      .map(n => n.trim().replace(/\D/g, ''))
+      .filter(Boolean);
 
-      const now = new Date();
-      const callBackTime = new Date(now.getTime() + 2 * 60 * 60 * 1000).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-      const timeReceived = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    const now = new Date();
+    const callBackTime = new Date(now.getTime() + 2 * 60 * 60 * 1000).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+    const timeReceived = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
-      const alertMsg = `🔔 *NEW FREE QUOTATION REQUEST — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${CustomerName || defaultName}\n📱 *Phone/Handle:* ${finalPhone}\n🔧 *Service:* ${ServiceSelected || 'PEB Warehouse'}\n📐 *Area Required:* ${AreaRequired || 'Not specified'}\n📍 *Site Location:* ${SiteLocation || 'Not specified'}\n📅 *Timeline:* ${Timeline || 'Not specified'}\n💰 *Budget Range:* ${BudgetRange || 'Not specified'}\n\n📊 *Lead Score:* ${payload.LeadScore || 85} (🔥 High Priority)\n🏷️ *Lead Status:* Quotation Requested\n⏰ *Received:* ${timeReceived}\n📞 *Call-Back Target:* Call by ${callBackTime} (within 2 hours)\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Review layout & call client back*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
+    const alertTitle = hasQuoteDetails ? '🔔 *NEW FREE QUOTATION REQUEST — Deepika Builtech CRM*' : '🔔 *NEW LEAD CAPTURED — Deepika Builtech CRM*';
 
-      for (const num of salesNumbers) {
-        sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Alert Error] Failed sending to ${num}:`, e.message));
-      }
+    const alertMsg = `${alertTitle}\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${CustomerName || defaultName}\n📱 *Phone/Handle:* ${finalPhone}\n🔧 *Service:* ${ServiceSelected || 'PEB Warehouse'}\n📐 *Area Required:* ${AreaRequired || 'Not specified'}\n📍 *Site Location:* ${SiteLocation || 'Not specified'}\n📅 *Timeline:* ${Timeline || 'Not specified'}\n💰 *Budget Range:* ${BudgetRange || 'Not specified'}\n\n📊 *Lead Score:* ${payload.LeadScore || 85} (🔥 High Priority)\n🏷️ *Lead Status:* ${LeadStatus || (hasQuoteDetails ? 'Quotation Requested' : 'New')}\n⏰ *Received:* ${timeReceived}\n📞 *Call-Back Target:* Call by ${callBackTime} (within 2 hours)\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Review layout & call client back*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
+
+    for (const num of salesNumbers) {
+      sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Alert Error] Failed sending to ${num}:`, e.message));
     }
 
     res.status(201).json({ success: true, message: 'Lead saved to MongoDB Atlas & Sales team alerted!' });
