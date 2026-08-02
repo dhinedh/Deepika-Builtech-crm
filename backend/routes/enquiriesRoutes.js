@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { Enquiry } from '../config/mongodb.js';
+import { sendDirectWhatsAppText } from '../whatsappService.js';
 
 const router = express.Router();
 
@@ -46,6 +47,22 @@ router.post('/', async (req, res) => {
     const newEnquiry = await Enquiry.create(req.body);
     const data = newEnquiry.toObject();
     data.id = data.id || data._id.toString();
+
+    // Send WhatsApp notification alert to sales team
+    const salesNumbers = (process.env.NOTIFICATION_WHATSAPP_NUMBERS || '919884487938,919791644688,918508599029,919600067611,916380855892')
+      .split(',')
+      .map(n => n.trim().replace(/\D/g, ''))
+      .filter(Boolean);
+
+    const now = new Date();
+    const timeReceived = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+    const alertMsg = `🔔 *NEW ENQUIRY RECEIVED — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${data.contactName || 'Customer'}\n📱 *Phone/Handle:* ${data.phone || 'Not specified'}\n💬 *Message:* ${data.lastMessage || 'New Enquiry'}\n🏷️ *Status:* ${data.status || 'New'}\n⏰ *Received:* ${timeReceived}\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Review & respond to client*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
+
+    for (const num of salesNumbers) {
+      sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Enquiry Alert Error] Failed sending to ${num}:`, e.message));
+    }
+
     res.status(201).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });

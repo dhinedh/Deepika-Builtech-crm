@@ -322,17 +322,31 @@ router.all('/whatsapp-bot-enquiry', async (req, res) => {
         lastMessage: MessageText || '',
         updated_at: new Date()
       });
-      return res.status(200).json({ success: true, message: 'Enquiry updated successfully' });
+    } else {
+      await Enquiry.create({
+        contactName: CustomerName || defaultName,
+        phone: finalPhone,
+        lastMessage: MessageText || '',
+        status: 'New'
+      });
     }
 
-    await Enquiry.create({
-      contactName: CustomerName || defaultName,
-      phone: finalPhone,
-      lastMessage: MessageText || '',
-      status: 'New'
-    });
+    // Send WhatsApp notification alert to sales team
+    const salesNumbers = (process.env.NOTIFICATION_WHATSAPP_NUMBERS || '919884487938,919791644688,918508599029,919600067611,916380855892')
+      .split(',')
+      .map(n => n.trim().replace(/\D/g, ''))
+      .filter(Boolean);
 
-    res.status(201).json({ success: true, message: 'Enquiry created successfully' });
+    const now = new Date();
+    const timeReceived = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+    const alertMsg = `🔔 *NEW ENQUIRY RECEIVED — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${CustomerName || defaultName}\n📱 *Phone/Handle:* ${finalPhone}\n💬 *Message:* ${MessageText || 'New Enquiry'}\n🏷️ *Status:* New Enquiry\n⏰ *Received:* ${timeReceived}\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Review & respond to client*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
+
+    for (const num of salesNumbers) {
+      sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Enquiry Alert Error] Failed sending to ${num}:`, e.message));
+    }
+
+    res.status(existingEnq ? 200 : 201).json({ success: true, message: existingEnq ? 'Enquiry updated successfully & sales team notified!' : 'Enquiry created successfully & sales team notified!' });
   } catch (err) {
     console.error('[WhatsApp Bot Enquiry Error]:', err);
     res.status(500).json({ error: err.message || 'Internal server error while inserting enquiry' });
