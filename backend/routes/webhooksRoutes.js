@@ -3,7 +3,7 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { Lead, Enquiry, Contact, FollowUp } from '../config/mongodb.js';
-import { sendFollowUpLead, sendDirectWhatsAppText } from '../whatsappService.js';
+import { sendFollowUpLead, sendDirectWhatsAppText, sendSalesAlertTemplate } from '../whatsappService.js';
 import { flushServerCache } from '../middleware/cacheMiddleware.js';
 
 // Direct local db.json writer for guaranteed fallback on DB errors
@@ -153,7 +153,9 @@ router.post('/meta', async (req, res) => {
               const alertMsg = `🔔 *NEW WHATSAPP LEAD CAPTURED — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${customerName}\n📱 *Phone:* ${phone}\n💬 *Message:* ${msg.text?.body || 'Initial Message'}\n⏰ *Received:* ${timeReceived}\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Respond to lead*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
 
               for (const num of salesNumbers) {
-                sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Lead Alert Error] Failed sending to ${num}:`, e.message));
+                sendSalesAlertTemplate(num, customerName, phone, msg.text?.body || 'WhatsApp Lead', timeReceived).then(res => {
+                  if (!res.success) sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Lead Alert Error] Failed sending to ${num}:`, e.message));
+                }).catch(() => sendDirectWhatsAppText(num, alertMsg));
               }
             } else {
               console.log(`[WhatsApp Filter] Ignored casual/spam message from ${phone}: "${messageText}"`);
@@ -214,7 +216,9 @@ router.post('/meta', async (req, res) => {
                 const alertMsg = `🔔 *NEW ${platform.toUpperCase()} LEAD CAPTURED — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${customerName}\n📱 *Handle/ID:* ${phoneIdentifier}\n💬 *Message:* ${messageText || 'Initial DM'}\n⏰ *Received:* ${timeReceived}\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Respond to lead*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
 
                 for (const num of salesNumbers) {
-                  sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Lead Alert Error] Failed sending to ${num}:`, e.message));
+                  sendSalesAlertTemplate(num, customerName, phoneIdentifier, messageText || `${platform.toUpperCase()} DM Lead`, timeReceived).then(res => {
+                    if (!res.success) sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Lead Alert Error] Failed sending to ${num}:`, e.message));
+                  }).catch(() => sendDirectWhatsAppText(num, alertMsg));
                 }
               }
             }
@@ -307,8 +311,12 @@ router.all('/whatsapp-bot-lead', async (req, res) => {
 
     const alertMsg = `${alertTitle}\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${CustomerName || defaultName}\n📱 *Phone/Handle:* ${finalPhone}\n🔧 *Service:* ${ServiceSelected || 'PEB Warehouse'}\n📐 *Area Required:* ${AreaRequired || 'Not specified'}\n📍 *Site Location:* ${SiteLocation || 'Not specified'}\n📅 *Timeline:* ${Timeline || 'Not specified'}\n💰 *Budget Range:* ${BudgetRange || 'Not specified'}\n\n📊 *Lead Score:* ${payload.LeadScore || 85} (🔥 High Priority)\n🏷️ *Lead Status:* ${LeadStatus || (hasQuoteDetails ? 'Quotation Requested' : 'New')}\n⏰ *Received:* ${timeReceived}\n📞 *Call-Back Target:* Call by ${callBackTime} (within 2 hours)\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Review layout & call client back*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
 
+    const leadDetailsStr = `${ServiceSelected || 'PEB Warehouse'} | Area: ${AreaRequired || 'N/A'} | Budget: ${BudgetRange || 'N/A'}`;
+
     for (const num of salesNumbers) {
-      sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Alert Error] Failed sending to ${num}:`, e.message));
+      sendSalesAlertTemplate(num, CustomerName || defaultName, finalPhone, leadDetailsStr, timeReceived).then(res => {
+        if (!res.success) sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Alert Error] Failed sending to ${num}:`, e.message));
+      }).catch(() => sendDirectWhatsAppText(num, alertMsg));
     }
 
     res.status(201).json({ success: true, message: 'Lead saved to MongoDB Atlas & Sales team alerted!' });
@@ -371,7 +379,9 @@ router.all('/whatsapp-bot-enquiry', async (req, res) => {
     const alertMsg = `🔔 *NEW ENQUIRY RECEIVED — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${CustomerName || defaultName}\n📱 *Phone/Handle:* ${finalPhone}\n💬 *Message:* ${MessageText || 'New Enquiry'}\n🏷️ *Status:* New Enquiry\n⏰ *Received:* ${timeReceived}\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Review & respond to client*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
 
     for (const num of salesNumbers) {
-      sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Enquiry Alert Error] Failed sending to ${num}:`, e.message));
+      sendSalesAlertTemplate(num, CustomerName || defaultName, finalPhone, MessageText || 'New Enquiry', timeReceived).then(res => {
+        if (!res.success) sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Enquiry Alert Error] Failed sending to ${num}:`, e.message));
+      }).catch(() => sendDirectWhatsAppText(num, alertMsg));
     }
 
     res.status(existingEnq ? 200 : 201).json({ success: true, message: existingEnq ? 'Enquiry updated successfully & sales team notified!' : 'Enquiry created successfully & sales team notified!' });

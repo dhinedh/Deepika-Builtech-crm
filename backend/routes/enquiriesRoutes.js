@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { Enquiry } from '../config/mongodb.js';
-import { sendDirectWhatsAppText } from '../whatsappService.js';
+import { sendDirectWhatsAppText, sendSalesAlertTemplate } from '../whatsappService.js';
 
 const router = express.Router();
 
@@ -60,7 +60,9 @@ router.post('/', async (req, res) => {
     const alertMsg = `🔔 *NEW ENQUIRY RECEIVED — Deepika Builtech CRM*\n━━━━━━━━━━━━━━━━━━━━━\n👤 *Client:* ${data.contactName || 'Customer'}\n📱 *Phone/Handle:* ${data.phone || 'Not specified'}\n💬 *Message:* ${data.lastMessage || 'New Enquiry'}\n🏷️ *Status:* ${data.status || 'New'}\n⏰ *Received:* ${timeReceived}\n━━━━━━━━━━━━━━━━━━━━━\n⚡ *ACTION REQUIRED: Review & respond to client*\n🌐 *CRM Link:* https://crm.deepikabuiltech.com`;
 
     for (const num of salesNumbers) {
-      sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Enquiry Alert Error] Failed sending to ${num}:`, e.message));
+      sendSalesAlertTemplate(num, data.contactName || 'Customer', data.phone || 'N/A', data.lastMessage || 'New Enquiry', timeReceived).then(res => {
+        if (!res.success) sendDirectWhatsAppText(num, alertMsg).catch(e => console.warn(`[Sales Enquiry Alert Error] Failed sending to ${num}:`, e.message));
+      }).catch(() => sendDirectWhatsAppText(num, alertMsg));
     }
 
     res.status(201).json({ success: true, data });

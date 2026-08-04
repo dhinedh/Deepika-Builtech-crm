@@ -2,9 +2,9 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// This service is built to connect with the Official Meta WhatsApp Cloud API
-const WHATSAPP_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
-const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
+// Helper getter functions for Meta credentials
+const getWhatsAppToken = () => process.env.WHATSAPP_ACCESS_TOKEN;
+const getPhoneNumberId = () => process.env.WHATSAPP_PHONE_NUMBER_ID;
 
 /**
  * Generic function to send a WhatsApp Template message
@@ -12,7 +12,10 @@ const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 export const sendWhatsAppMessage = async (phone, templateId, parameters, langCode = "en_US") => {
   console.log(`[WhatsApp API] Attempting to send message to ${phone}`);
   
-  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
+  const token = getWhatsAppToken();
+  const phoneId = getPhoneNumberId();
+
+  if (!token || !phoneId) {
     console.error('[WhatsApp API] Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID in .env');
     return { success: false, error: 'Configuration missing' };
   }
@@ -22,7 +25,7 @@ export const sendWhatsAppMessage = async (phone, templateId, parameters, langCod
     const finalPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
 
     const response = await axios.post(
-      `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
+      `https://graph.facebook.com/v20.0/${phoneId}/messages`,
       {
         messaging_product: "whatsapp",
         to: finalPhone,
@@ -43,7 +46,7 @@ export const sendWhatsAppMessage = async (phone, templateId, parameters, langCod
       },
       {
         headers: {
-          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         }
       }
@@ -77,7 +80,10 @@ export const sendFollowUpLead = async (phone, customerName) => {
  * Send direct free-form text message via Meta WhatsApp Cloud API
  */
 export const sendDirectWhatsAppText = async (phone, text) => {
-  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
+  const token = getWhatsAppToken();
+  const phoneId = getPhoneNumberId();
+
+  if (!token || !phoneId) {
     console.error('[WhatsApp API] Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID in .env');
     return { success: false, error: 'Configuration missing' };
   }
@@ -86,7 +92,7 @@ export const sendDirectWhatsAppText = async (phone, text) => {
     const finalPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
 
     const response = await axios.post(
-      `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
+      `https://graph.facebook.com/v20.0/${phoneId}/messages`,
       {
         messaging_product: "whatsapp",
         to: finalPhone,
@@ -95,7 +101,7 @@ export const sendDirectWhatsAppText = async (phone, text) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         }
       }
