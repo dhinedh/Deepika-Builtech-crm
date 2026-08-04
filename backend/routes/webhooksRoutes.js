@@ -44,7 +44,7 @@ async function getMetaUserProfile(senderId, platform) {
     console.warn('⚠️ Missing Meta Access Token for profile lookup');
     return null;
   }
-  
+
   try {
     if (platform === 'facebook') {
       const res = await axios.get(`https://graph.facebook.com/v18.0/${senderId}`, {
@@ -82,7 +82,7 @@ async function getMetaUserProfile(senderId, platform) {
 // 1. Verification Endpoint for Meta (Required when setting up the Webhook in Meta App Dashboard)
 router.get('/meta', (req, res) => {
   const verify_token = process.env.META_VERIFY_TOKEN;
-  
+
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
@@ -102,7 +102,7 @@ router.get('/meta', (req, res) => {
 // 2. Payload Receiver for Meta Events (New Messages, Lead Gen Forms, etc.)
 router.post('/meta', async (req, res) => {
   const body = req.body;
-  
+
   if (body.object) {
     try {
       if (body.object === 'whatsapp_business_account') {
@@ -112,7 +112,7 @@ router.post('/meta', async (req, res) => {
           const contact = changes.contacts?.[0];
           const phone = msg.from;
           const messageText = msg.text?.body?.toLowerCase() || '';
-          
+
           // 1. FILTER: Check if this person is already in the CRM
           const existingLead = await Lead.findOne({ phone });
           const existingContact = await Contact.findOne({ phone });
@@ -123,7 +123,7 @@ router.post('/meta', async (req, res) => {
           } else {
             // 2. FILTER: Check for "Lead Intent" Keywords
             const leadKeywords = ['hi', 'hello', 'interested', 'price', 'cost', 'quote', 'details', 'buy', 'service', 'help', 'inquiry'];
-            
+
             const isLeadIntent = leadKeywords.some(keyword => messageText.includes(keyword)) || messageText === '';
 
             if (isLeadIntent) {
@@ -137,7 +137,7 @@ router.post('/meta', async (req, res) => {
                 leadScore: 20,
                 notes: `Initial Inquiry: ${msg.text?.body || 'Media/Attachment sent'}`
               };
-              
+
               await Lead.create(newLead);
               console.log(`[WhatsApp Lead Captured] Added ${customerName} to CRM.`);
               await sendFollowUpLead(phone, customerName);
@@ -161,11 +161,11 @@ router.post('/meta', async (req, res) => {
           }
         }
       }
-      
+
       // Handle Facebook Page / Instagram Lead Generation Ads OR Direct Messages
       if (body.object === 'page' || body.object === 'instagram') {
         const entry = body.entry?.[0];
-        
+
         // 1. Handle Direct Messages (Messenger / Instagram DM)
         if (entry && entry.messaging) {
           const messaging = entry.messaging[0];
@@ -189,7 +189,7 @@ router.post('/meta', async (req, res) => {
 
               if (isLeadIntent) {
                 const customerName = await getMetaUserProfile(senderId, platform) || (platform === 'facebook' ? 'Facebook Customer' : 'Instagram Customer');
-                
+
                 const newLead = {
                   contactName: customerName,
                   phone: phoneIdentifier,
@@ -199,7 +199,7 @@ router.post('/meta', async (req, res) => {
                   leadScore: 20,
                   notes: `Initial Inquiry: ${messageText || 'Media/Attachment sent'}`
                 };
-                
+
                 await Lead.create(newLead);
                 console.log(`[${platform.toUpperCase()} Lead Captured] Added ${customerName} to CRM.`);
 

@@ -9,7 +9,7 @@ const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 /**
  * Generic function to send a WhatsApp Template message
  */
-export const sendWhatsAppMessage = async (phone, templateId, parameters) => {
+export const sendWhatsAppMessage = async (phone, templateId, parameters, langCode = "en_US") => {
   console.log(`[WhatsApp API] Attempting to send message to ${phone}`);
   
   if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
@@ -22,20 +22,20 @@ export const sendWhatsAppMessage = async (phone, templateId, parameters) => {
     const finalPhone = formattedPhone.length === 10 ? `91${formattedPhone}` : formattedPhone;
 
     const response = await axios.post(
-      `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
+      `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: "whatsapp",
         to: finalPhone,
         type: "template",
         template: {
           name: templateId,
-          language: { code: "en" },
+          language: { code: langCode },
           components: [
             {
               type: "body",
               parameters: parameters.map(param => ({
                 type: "text",
-                text: param
+                text: String(param || '')
               }))
             }
           ]
@@ -54,17 +54,23 @@ export const sendWhatsAppMessage = async (phone, templateId, parameters) => {
 
   } catch (error) {
     const errorMsg = error.response?.data?.error?.message || error.message;
-    console.error(`[WhatsApp API] Failed to send message:`, errorMsg);
+    console.error(`[WhatsApp API] Failed to send template message:`, errorMsg);
     return { success: false, error: errorMsg };
   }
 };
 
 /**
+ * Specialized function for the 'sales_lead_alert' template
+ */
+export const sendSalesAlertTemplate = async (phone, clientName, clientPhone, details, time) => {
+  return await sendWhatsAppMessage(phone, 'sales_lead_alert', [clientName, clientPhone, details, time], 'en_US');
+};
+
+/**
  * Specialized function for the 'follow_up_lead' template
- * Usage: await sendFollowUpLead("919876543210", "Rajesh");
  */
 export const sendFollowUpLead = async (phone, customerName) => {
-  return await sendWhatsAppMessage(phone, 'follow_up_lead', [customerName]);
+  return await sendWhatsAppMessage(phone, 'follow_up_lead', [customerName], 'en');
 };
 
 /**
