@@ -110,11 +110,11 @@ const Dashboard: React.FC = () => {
         </div>
         
         <div className="card stat-card">
-          <div className="stat-icon projects-icon"><Briefcase size={24} /></div>
+          <div className="stat-icon projects-icon"><Users size={24} /></div>
           <div className="stat-content">
-            <p className="label">Active Projects</p>
+            <p className="label">Total Leads</p>
             <div className="stat-value-group">
-              <h3>{projects.length}</h3>
+              <h3>{leads.length}</h3>
             </div>
           </div>
         </div>
