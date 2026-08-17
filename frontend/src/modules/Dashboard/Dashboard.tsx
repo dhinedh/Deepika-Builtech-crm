@@ -47,13 +47,17 @@ const Dashboard: React.FC = () => {
 
   const totalEnquiriesCount = enquiries.length;
   
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const last30DaysEnquiriesCount = enquiries.filter(e => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  const thisMonthEnquiriesCount = enquiries.filter(e => {
     const dateStr = e.createdAt || (e as any).created_at;
-    if (!dateStr) return true;
+    if (!dateStr) return false;
     const createdDate = new Date(dateStr);
-    return !isNaN(createdDate.getTime()) ? createdDate >= thirtyDaysAgo : true;
+    return !isNaN(createdDate.getTime()) && 
+      createdDate.getFullYear() === currentYear && 
+      createdDate.getMonth() === currentMonth;
   }).length;
 
   const pipelineStages = ['Enquiry', 'Contacted', 'Qualified', 'Site Visit', 'Quotation', 'Negotiation', 'Won'];
@@ -88,9 +92,9 @@ const Dashboard: React.FC = () => {
         <div className="card stat-card">
           <div className="stat-icon leads-icon"><MessageSquare size={24} /></div>
           <div className="stat-content">
-            <p className="label">Last 30 Days Enquiry</p>
+            <p className="label">This Month Enquiry</p>
             <div className="stat-value-group">
-              <h3>{last30DaysEnquiriesCount}</h3>
+              <h3>{thisMonthEnquiriesCount}</h3>
             </div>
           </div>
         </div>
