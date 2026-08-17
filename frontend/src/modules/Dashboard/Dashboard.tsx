@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Users, IndianRupee, Briefcase, CalendarClock, 
-  ArrowUpRight, MoreHorizontal 
+  ArrowUpRight, MoreHorizontal, MessageSquare
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -45,12 +45,12 @@ const Dashboard: React.FC = () => {
     if (fetchEnquiries) fetchEnquiries();
   }, []);
 
-  const totalLeadsCount = leads.length;
+  const totalEnquiriesCount = enquiries.length;
   
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const last30DaysLeadsCount = leads.filter(l => {
-    const dateStr = l.createdAt || (l as any).created_at;
+  const last30DaysEnquiriesCount = enquiries.filter(e => {
+    const dateStr = e.createdAt || (e as any).created_at;
     if (!dateStr) return true;
     const createdDate = new Date(dateStr);
     return !isNaN(createdDate.getTime()) ? createdDate >= thirtyDaysAgo : true;
@@ -86,21 +86,21 @@ const Dashboard: React.FC = () => {
       {/* Stats Row */}
       <div className="stats-grid">
         <div className="card stat-card">
-          <div className="stat-icon leads-icon"><Users size={24} /></div>
+          <div className="stat-icon leads-icon"><MessageSquare size={24} /></div>
           <div className="stat-content">
-            <p className="label">Last 30 Days Lead</p>
+            <p className="label">Last 30 Days Enquiry</p>
             <div className="stat-value-group">
-              <h3>{last30DaysLeadsCount}</h3>
+              <h3>{last30DaysEnquiriesCount}</h3>
             </div>
           </div>
         </div>
         
         <div className="card stat-card">
-          <div className="stat-icon value-icon"><Users size={24} /></div>
+          <div className="stat-icon value-icon"><MessageSquare size={24} /></div>
           <div className="stat-content">
-            <p className="label">Total Lead</p>
+            <p className="label">Total Enquiry</p>
             <div className="stat-value-group">
-              <h3>{totalLeadsCount}</h3>
+              <h3>{totalEnquiriesCount}</h3>
             </div>
           </div>
         </div>
