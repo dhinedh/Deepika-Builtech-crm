@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import axios from 'axios';
 import { Lead, Enquiry, FollowUp } from '../config/mongodb.js';
-import { sendWhatsAppMessage } from '../whatsappService.js';
+import { sendWhatsAppMessage, sendSalesAlertTemplate } from '../whatsappService.js';
 
 // In-memory store to prevent duplicate reminders if DB update fails (fallback)
 const sentReminders = new Set();
@@ -186,4 +186,50 @@ export const startCronJobs = () => {
       console.error('[Cron Error] Reminder check failed:', err.message);
     }
   });
+
+  /**
+   * 2. SALES TEAM KEEP-ALIVE PING
+   * Runs every 20 hours (at 8:00 AM and 4:00 AM) to send a Utility Template message to all sales
+   * numbers. This keeps the WhatsApp 24-hour conversation window open so that real lead/enquiry
+   * notifications always deliver instantly without recipients needing to message the bot first.
+   *
+   * Schedule: "0 8,4 * * *" → fires at 04:00 AM and 08:00 AM IST daily (~20 hours apart)
+   */
+  cron.schedule('0 4,8 * * *', async () => {
+    const salesNumbers = (process.env.NOTIFICATION_WHATSAPP_NUMBERS || '919884487938,919791644688,918508599029,919600067611,916380855892')
+      .split(',')
+      .map(n => n.trim().replace(/\D/g, ''))
+      .filter(Boolean);
+
+    const now = new Date();
+    const timeStr = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+    console.log(`[Keep-Alive Ping] Sending keep-alive to ${salesNumbers.length} sales numbers at ${timeStr}...`);
+
+    for (const num of salesNumbers) {
+      try {
+        const res = await sendSalesAlertTemplate(
+          num,
+          'Deepika Builtech CRM',
+          'System',
+          'Keep-alive ping — CRM notifications are active and monitoring for new leads.',
+          timeStr
+        );
+        if (res.success) {
+          console.log(`[Keep-Alive Ping] ✅ Sent to +${num}`);
+        } else {
+          console.warn(`[Keep-Alive Ping] ⚠️ Template failed for +${num}: ${res.error}`);
+        }
+      } catch (err) {
+        console.warn(`[Keep-Alive Ping] ❌ Error sending to +${num}:`, err.message);
+      }
+      // Brief delay to stay within Meta rate limits
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    console.log('[Keep-Alive Ping] Done.');
+  }, {
+    timezone: 'Asia/Kolkata'
+  });
 };
+

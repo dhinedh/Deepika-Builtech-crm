@@ -1,5 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
 import { Lead } from '../config/mongodb.js';
 
 const router = express.Router();
@@ -16,15 +18,27 @@ function getFilter(id) {
 router.get('/', async (req, res) => {
   try {
     const leads = await Lead.find({}).sort({ created_at: -1, createdAt: -1 });
-    const data = leads.map(l => {
-      const obj = l.toObject();
-      obj.id = obj.id || obj._id.toString();
-      return obj;
-    });
-    res.json({ success: true, data });
+    if (leads && leads.length > 0) {
+      const data = leads.map(l => {
+        const obj = l.toObject();
+        obj.id = obj.id || obj._id.toString();
+        return obj;
+      });
+      return res.json({ success: true, data });
+    }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.warn('[Leads API Warning]: MongoDB query failed, using local db.json:', error.message);
   }
+
+  try {
+    const dbPath = path.resolve('db.json');
+    if (fs.existsSync(dbPath)) {
+      const raw = fs.readFileSync(dbPath, 'utf8');
+      const fileDb = JSON.parse(raw);
+      return res.json({ success: true, data: fileDb.leads || [] });
+    }
+  } catch (fsErr) {}
+  res.json({ success: true, data: [] });
 });
 
 // GET single lead

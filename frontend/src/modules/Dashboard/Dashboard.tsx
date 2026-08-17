@@ -46,7 +46,15 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const totalLeadsCount = leads.length;
-  const totalPipelineValue = leads.reduce((sum, l) => sum + (Number(l.estimatedBudget) || 0), 0);
+  
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const last30DaysLeadsCount = leads.filter(l => {
+    const dateStr = l.createdAt || (l as any).created_at;
+    if (!dateStr) return true;
+    const createdDate = new Date(dateStr);
+    return !isNaN(createdDate.getTime()) ? createdDate >= thirtyDaysAgo : true;
+  }).length;
 
   const pipelineStages = ['Enquiry', 'Contacted', 'Qualified', 'Site Visit', 'Quotation', 'Negotiation', 'Won'];
   const pipelineData = pipelineStages.map(stage => {
@@ -80,19 +88,19 @@ const Dashboard: React.FC = () => {
         <div className="card stat-card">
           <div className="stat-icon leads-icon"><Users size={24} /></div>
           <div className="stat-content">
-            <p className="label">Total Leads (Month)</p>
+            <p className="label">Last 30 Days Lead</p>
             <div className="stat-value-group">
-              <h3>{totalLeadsCount}</h3>
+              <h3>{last30DaysLeadsCount}</h3>
             </div>
           </div>
         </div>
         
         <div className="card stat-card">
-          <div className="stat-icon value-icon"><IndianRupee size={24} /></div>
+          <div className="stat-icon value-icon"><Users size={24} /></div>
           <div className="stat-content">
-            <p className="label">Pipeline Value</p>
+            <p className="label">Total Lead</p>
             <div className="stat-value-group">
-              <h3>₹ {totalPipelineValue} L</h3>
+              <h3>{totalLeadsCount}</h3>
             </div>
           </div>
         </div>

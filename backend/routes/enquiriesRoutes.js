@@ -1,5 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
 import { Enquiry } from '../config/mongodb.js';
 import { sendDirectWhatsAppText, sendSalesAlertTemplate } from '../whatsappService.js';
 
@@ -17,15 +19,27 @@ function getFilter(id) {
 router.get('/', async (req, res) => {
   try {
     const enquiries = await Enquiry.find({}).sort({ created_at: -1, createdAt: -1 });
-    const data = enquiries.map(e => {
-      const obj = e.toObject();
-      obj.id = obj.id || obj._id.toString();
-      return obj;
-    });
-    res.json({ success: true, data });
+    if (enquiries && enquiries.length > 0) {
+      const data = enquiries.map(e => {
+        const obj = e.toObject();
+        obj.id = obj.id || obj._id.toString();
+        return obj;
+      });
+      return res.json({ success: true, data });
+    }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.warn('[Enquiries API Warning]: MongoDB query failed, using local db.json:', error.message);
   }
+
+  try {
+    const dbPath = path.resolve('db.json');
+    if (fs.existsSync(dbPath)) {
+      const raw = fs.readFileSync(dbPath, 'utf8');
+      const fileDb = JSON.parse(raw);
+      return res.json({ success: true, data: fileDb.enquiries || [] });
+    }
+  } catch (fsErr) {}
+  res.json({ success: true, data: [] });
 });
 
 // GET single enquiry
